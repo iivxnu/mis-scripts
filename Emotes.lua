@@ -1,28 +1,21 @@
 --[[ 
-    Emote Script - Abre con COMA (,)
-    Código completo y funcional
+    Source script taken from: https://github.com/Roblox/creator-docs/blob/main/content/en-us/characters/emotes.md
+
+    scriptblox: https://scriptblox.com/script/Universal-Script-7yd7-I-Emote-Script-48024
 ]]
 
+
 if _G.EmotesGUIRunning then
+    getgenv().Notify({
+        Title = '7yd7 | Emote',
+        Content = '⚠️ It works It actually works',
+        Duration = 5
+    })
     return
 end
 _G.EmotesGUIRunning = true
 
--- Cargar sistema de notificaciones
-local success, notify = pcall(function()
-    return loadstring(game:HttpGet("https://raw.githubusercontent.com/7yd7/Menu-7yd7/refs/heads/Script/GUIS/Off-site/Notify.lua"))()
-end)
-
-if not success then
-    -- Sistema de notificaciones simple si falla
-    getgenv().Notify = function(data)
-        game:GetService("StarterGui"):SetCore("SendNotification", {
-            Title = data.Title or "7yd7",
-            Text = data.Content or "Notificación",
-            Duration = data.Duration or 5
-        })
-    end
-end
+loadstring(game:HttpGet("https://raw.githubusercontent.com/7yd7/Menu-7yd7/refs/heads/Script/GUIS/Off-site/Notify.lua"))()
 
 getgenv().Notify({
     Title = '7yd7 | Emote',
@@ -38,12 +31,10 @@ local character = player.Character or player.CharacterAdded:Wait()
 local humanoid = character:WaitForChild("Humanoid")
 local UserInputService = game:GetService("UserInputService")
 local CoreGui = game:GetService("CoreGui")
-local StarterGui = game:GetService("StarterGui")
 
--- Activar menú de emotes
-StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.EmotesMenu, true)
+-- CONFIGURACIÓN DE TECLA COMA - MODIFICADO
+local OPEN_KEY = Enum.KeyCode.Comma
 
--- Variables principales
 local emoteClickConnections = {}
 local isMonitoringClicks = false
 local currentTimer = nil
@@ -60,47 +51,40 @@ local animationSearchTerm = ""
 getgenv().lastPlayedAnimation = getgenv().lastPlayedAnimation or nil
 getgenv().autoReloadEnabled = getgenv().autoReloadEnabled or false
 
--- Configuración de tecla (COMA)
-local OPEN_KEY = Enum.KeyCode.Comma
-
--- Función para abrir/cerrar menú
-local function toggleEmotesMenu()
-    local coreGui = game:GetService("CoreGui")
-    local robloxGui = coreGui:FindFirstChild("RobloxGui")
-    
-    if robloxGui then
-        local emotesMenu = robloxGui:FindFirstChild("EmotesMenu")
-        if emotesMenu then
-            local isEnabled = emotesMenu.Enabled
-            emotesMenu.Enabled = not isEnabled
-            
-            if not isEnabled then
-                getgenv().Notify({
-                    Title = '7yd7 | Emote',
-                    Content = '📱 Menú abierto con COMA',
-                    Duration = 3
-                })
-            end
-        else
-            -- Si no existe, activar el menú
-            StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.EmotesMenu, true)
-            getgenv().Notify({
-                Title = '7yd7 | Emote',
-                Content = '📱 Menú activado. Presiona COMA otra vez',
-                Duration = 3
-            })
+RunService.Heartbeat:Connect(function()
+    if player.Character and player.Character.Humanoid.RigType == Enum.HumanoidRigType.R6 then
+        local errorMsg = CoreGui.RobloxGui.EmotesMenu.Children.ErrorMessage
+        if errorMsg.Visible then
+            errorMsg.ErrorText.Text = "Only r15 does not work r6"
         end
     end
+end)
+
+function ErrorMessage(text, duration)
+
+    if currentTimer then
+        task.cancel(currentTimer)
+        currentTimer = nil
+    end
+    
+    local errorMessage = CoreGui.RobloxGui.EmotesMenu.Children.ErrorMessage
+    local errorText = errorMessage.ErrorText
+    
+    errorText.Text = text
+    
+    errorMessage.Visible = true
+    
+    currentTimer = task.delay(duration, function()
+        errorMessage.Visible = false
+        currentTimer = nil
+    end)
 end
 
--- Detectar tecla COMA
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    if gameProcessed then return end
-    
-    if input.KeyCode == OPEN_KEY then
-        toggleEmotesMenu()
+local function stopEmotes()
+    for _, track in ipairs(humanoid:GetPlayingAnimationTracks()) do
+        track:Stop()
     end
-end)
+end
 
 local emotesData = {}
 local currentPage = 1
@@ -130,6 +114,39 @@ local enabledButtonImage = "rbxassetid://106798555684020"
 
 local favoriteIconId = "rbxassetid://97307461910825" 
 local notFavoriteIconId = "rbxassetid://124025954365505"
+
+-- FUNCIÓN PARA ABRIR/CERRAR CON COMA - NUEVA
+local function toggleEmotesMenu()
+    local coreGui = game:GetService("CoreGui")
+    local robloxGui = coreGui:FindFirstChild("RobloxGui")
+    
+    if robloxGui then
+        local emotesMenu = robloxGui:FindFirstChild("EmotesMenu")
+        if emotesMenu then
+            local isEnabled = emotesMenu.Enabled
+            emotesMenu.Enabled = not isEnabled
+            
+            if not isEnabled then
+                getgenv().Notify({
+                    Title = '7yd7 | Emote',
+                    Content = '📱 Menú abierto con COMA',
+                    Duration = 3
+                })
+            end
+        else
+            game:GetService("StarterGui"):SetCoreGuiEnabled(Enum.CoreGuiType.EmotesMenu, true)
+        end
+    end
+end
+
+-- DETECTOR DE TECLA COMA - NUEVO
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    
+    if input.KeyCode == OPEN_KEY then
+        toggleEmotesMenu()
+    end
+end)
 
 local function getCharacterAndHumanoid()
     local character = player.Character
@@ -347,6 +364,7 @@ local function isInFavorites(assetId)
     end
     return false
 end
+
 local function updateAnimationImages(currentPageAnimations)
     local success, frontFrame = pcall(function()
         return game:GetService("CoreGui").RobloxGui.EmotesMenu.Children.Main.EmotesWheel.Front.EmotesButtons
@@ -379,6 +397,7 @@ local function updateAnimationImages(currentPageAnimations)
         end
     end
 end
+
 
 local function updateFavoriteIcon(imageLabel, assetId, isFavorite)
     local favoriteIcon = imageLabel:FindFirstChild("FavoriteIcon")
@@ -866,1143 +885,4 @@ local function createGUIElements()
     SpeedBox.ZIndex = 2
 
     UICorner_4.CornerRadius = UDim.new(0, 10)
-    UICorner_4.Parent = SpeedBox
-
-    SpeedEmote.Name = "SpeedEmote"
-    SpeedEmote.Parent = emotesWheel
-    SpeedEmote.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    SpeedEmote.BackgroundTransparency = 0.400
-    SpeedEmote.BorderColor3 = Color3.fromRGB(0, 0, 0)
-    SpeedEmote.BorderSizePixel = 0
-    SpeedEmote.Position = UDim2.new(0.888999999, 0, -0, 0)
-    SpeedEmote.Size = UDim2.new(0.0874999985, 0, 0.0874999985, 0)
-    SpeedEmote.Image = "rbxassetid://116056570415896"
-    SpeedEmote.ZIndex = 2
-
-    UICorner_2.CornerRadius = UDim.new(0, 10)
-    UICorner_2.Parent = SpeedEmote
-
-Changepage.Name = "Changepage"
-Changepage.Parent = emotesWheel
-Changepage.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-Changepage.BackgroundTransparency = 0.400
-Changepage.BorderColor3 = Color3.fromRGB(0, 0, 0)
-Changepage.BorderSizePixel = 0
-Changepage.Position = UDim2.new(0.019, 0,1.021, 0)
-Changepage.Size = UDim2.new(0.087, 0,0.087, 0)
-Changepage.ZIndex = 3
-Changepage.Image = "rbxassetid://13285615740"
-
-UICorner_5.CornerRadius = UDim.new(0, 10)
-UICorner_5.Parent = Changepage
-
-Reload.Name = "Reload"
-Reload.Parent = emotesWheel
-Reload.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-Reload.BackgroundTransparency = 0.400
-Reload.BorderColor3 = Color3.fromRGB(0, 0, 0)
-Reload.BorderSizePixel = 0
-Reload.Position = UDim2.new(0.888999999, 0, 1.02100003, 0)
-Reload.Size = UDim2.new(0.0869999975, 0, 0.0869999975, 0)
-Reload.ZIndex = 3
-Reload.Image = "rbxassetid://127493377027615"
-
-UICorner_6.CornerRadius = UDim.new(0, 10)
-UICorner_6.Parent = Reload
-
-    loadSpeedEmoteConfig()
-
-    connectEvents()
-    isGUICreated = true
-    updateGUIColors()
-    return true
-end
-
-local function updatePageDisplay()
-    if _4pages and _2Routenumber then
-        _4pages.Text = tostring(totalPages)
-        _2Routenumber.Text = tostring(currentPage)
-    end
-end
-local function toggleFavorite(emoteId, emoteName)
-    local found = false
-    local index = 0
-
-    for i, fav in pairs(favoriteEmotes) do
-        if fav.id == emoteId then
-            found = true
-            index = i
-            break
-        end
-    end
-
-    if found then
-        table.remove(favoriteEmotes, index)
-        getgenv().Notify({
-            Title = '7yd7 | Favorite System',
-            Content = '🗑️ Removed "' .. emoteName .. '" from favorites',
-            Duration = 3
-        })
-    else
-        table.insert(favoriteEmotes, {
-            id = emoteId,
-            name = emoteName .. " - ⭐"
-        })
-        getgenv().Notify({
-            Title = '7yd7 | Favorite System',
-            Content = '✅ Added "' .. emoteName .. '" to favorites',
-            Duration = 3
-        })
-    end
-
-    saveFavorites()
-    totalPages = calculateTotalPages()
-    updatePageDisplay()
-    updateEmotes()
-    
-    updateAllFavoriteIcons()
-end
-
-local function toggleFavoriteAnimation(animationData)
-    local found = false
-    local index = 0
-
-    for i, fav in pairs(favoriteAnimations) do
-        if fav.id == animationData.id then
-            found = true
-            index = i
-            break
-        end
-    end
-
-    if found then
-        table.remove(favoriteAnimations, index)
-        getgenv().Notify({
-            Title = '7yd7 | Favorite System',
-            Content = '🗑️ Removed "' .. animationData.name .. '" from favorites',
-            Duration = 3
-        })
-    else
-        table.insert(favoriteAnimations, {
-            id = animationData.id,
-            name = animationData.name .. " - ⭐",
-            bundledItems = animationData.bundledItems
-        })
-        getgenv().Notify({
-            Title = '7yd7 | Favorite System',
-            Content = '✅ Added "' .. animationData.name .. '" to favorites',
-            Duration = 3
-        })
-    end
-
-    saveFavoritesAnimations()
-    totalPages = calculateTotalPages()
-    updatePageDisplay()
-    updateAnimations()
-    updateAllFavoriteIcons()
-end
-
-local function setupEmoteClickDetection()
-    if isMonitoringClicks then
-        return
-    end
-   
-    local function monitorEmotes()
-        while favoriteEnabled do
-            local success, frontFrame = pcall(function()
-                return game:GetService("CoreGui").RobloxGui.EmotesMenu.Children.Main.EmotesWheel.Front.EmotesButtons
-            end)
-           
-            if success and frontFrame then
-                for _, connection in pairs(emoteClickConnections) do
-                    if connection then
-                        connection:Disconnect()
-                    end
-                end
-                emoteClickConnections = {}
-               
-                for _, child in pairs(frontFrame:GetChildren()) do
-                    if child:IsA("ImageLabel") and child.Image ~= "" then
-                        local clickDetector = child:FindFirstChild("ClickDetector") or Instance.new("TextButton")
-                        clickDetector.Name = "ClickDetector"
-                        clickDetector.Size = UDim2.new(1, 0, 1, 0)
-                        clickDetector.Position = UDim2.new(0, 0, 0, 0)
-                        clickDetector.BackgroundTransparency = 1
-                        clickDetector.Text = ""
-                        clickDetector.ZIndex = child.ZIndex + 1
-                        clickDetector.Parent = child
-                        
-                        local imageUrl = child.Image
-                        local assetId = extractAssetId(imageUrl)
-                        if assetId then
-                            local isFavorite = isInFavorites(assetId)
-                            updateFavoriteIcon(child, assetId, isFavorite)
-                        end
-                       
-                        local connection = clickDetector.MouseButton1Click:Connect(function()
-                            if favoriteEnabled then
-                                if assetId then
-                                    local emoteName = getEmoteName(assetId)
-                                    toggleFavorite(assetId, emoteName)
-                                end
-                            end
-                        end)
-                       
-                        table.insert(emoteClickConnections, connection)
-                    end
-                end
-            end
-           
-            task.wait(0.1)
-        end
-       
-        for _, connection in pairs(emoteClickConnections) do
-            if connection then
-                connection:Disconnect()
-            end
-        end
-        emoteClickConnections = {}
-        isMonitoringClicks = false
-    end
-   
-    if favoriteEnabled then
-        isMonitoringClicks = true
-        task.spawn(monitorEmotes)
-    end
-end
-
-local function applyAnimation(animationData)
-    local player = game.Players.LocalPlayer
-    local character = player.Character or player.CharacterAdded:Wait()
-    local humanoid = character:FindFirstChild("Humanoid")
-    local animate = character:FindFirstChild("Animate")
-    
-    if not animate or not humanoid then
-        getgenv().Notify({
-            Title = '7yd7 | Animation Error',
-            Content = '❌ Animate or Humanoid not found',
-            Duration = 3
-        })
-        return
-    end
-    
-    local bundleId = animationData.id
-    local bundledItems = animationData.bundledItems
-
-    getgenv().lastPlayedAnimation = animationData
-    
-    if not bundledItems then
-        getgenv().Notify({
-            Title = '7yd7 | Animation Error', 
-            Content = '❌ No bundled items found',
-            Duration = 3
-        })
-        return
-    end
-    
-    for _, track in pairs(humanoid:GetPlayingAnimationTracks()) do
-        track:Stop()
-    end
-    
-    for key, assetIds in pairs(bundledItems) do
-        for _, assetId in pairs(assetIds) do
-            spawn(function()
-                local success, objects = pcall(function()
-                    return game:GetObjects("rbxassetid://" .. assetId)
-                end)
-                
-                if success and objects then
-                    local function searchForAnimations(parent, parentPath)
-                        for _, child in pairs(parent:GetChildren()) do
-                            if child:IsA("Animation") then
-                                local animationPath = parentPath .. "." .. child.Name
-                                local pathParts = animationPath:split(".")
-                                
-                                if #pathParts >= 2 then
-                                    local animateCategory = pathParts[#pathParts - 1]
-                                    local animationName = pathParts[#pathParts]
-                                    
-                                    if animate:FindFirstChild(animateCategory) then
-                                        local categoryFolder = animate[animateCategory]
-                                        if categoryFolder:FindFirstChild(animationName) then
-                                            categoryFolder[animationName].AnimationId = child.AnimationId
-                                            
-                                            task.wait(0.1)
-                                            local animation = Instance.new("Animation")
-                                            animation.AnimationId = child.AnimationId
-                                            
-                                            local animTrack = humanoid.Animator:LoadAnimation(animation)
-                                            animTrack.Priority = Enum.AnimationPriority.Action
-                                            animTrack:Play()
-                                            
-                                            task.wait(0.1)
-                                            animTrack:Stop()
-                                        end
-                                    end
-                                end
-                            elseif #child:GetChildren() > 0 then
-                                searchForAnimations(child, parentPath .. "." .. child.Name)
-                            end
-                        end
-                    end
-                    
-                    for _, obj in pairs(objects) do
-                        searchForAnimations(obj, obj.Name)
-                        obj.Parent = workspace
-                        task.delay(1, function()
-                            if obj then obj:Destroy() end
-                        end)
-                    end
-                end
-            end)
-        end
-    end
-end
-
-local function monitorAnimations()
-    while currentMode == "animation" do
-        local success, frontFrame = pcall(function()
-            return game:GetService("CoreGui").RobloxGui.EmotesMenu.Children.Main.EmotesWheel.Front.EmotesButtons
-        end)
-        
-        if success and frontFrame then
-            for _, connection in pairs(emoteClickConnections) do
-                if connection then
-                    connection:Disconnect()
-                end
-            end
-            emoteClickConnections = {}
-            
-            local favoritesToUse = _G.filteredFavoritesAnimationsForDisplay or favoriteAnimations
-            local hasFavorites = #favoritesToUse > 0
-            local favoritePagesCount = hasFavorites and math.ceil(#favoritesToUse / itemsPerPage) or 0
-            local isInFavoritesPages = currentPage <= favoritePagesCount
-            
-            local currentPageAnimations = {}
-            
-            if isInFavoritesPages and hasFavorites then
-                local startIndex = (currentPage - 1) * itemsPerPage + 1
-                local endIndex = math.min(startIndex + itemsPerPage - 1, #favoritesToUse)
-                
-                for i = startIndex, endIndex do
-                    if favoritesToUse[i] then
-                        table.insert(currentPageAnimations, favoritesToUse[i])
-                    end
-                end
-            else
-                local normalAnimations = {}
-                for _, animation in pairs(filteredAnimations) do
-                    if not isInFavorites(animation.id) then
-                        table.insert(normalAnimations, animation)
-                    end
-                end
-                
-                local adjustedPage = currentPage - favoritePagesCount
-                local startIndex = (adjustedPage - 1) * itemsPerPage + 1
-                local endIndex = math.min(startIndex + itemsPerPage - 1, #normalAnimations)
-                
-                for i = startIndex, endIndex do
-                    if normalAnimations[i] then
-                        table.insert(currentPageAnimations, normalAnimations[i])
-                    end
-                end
-            end
-            
-            local buttonIndex = 1
-            for _, child in pairs(frontFrame:GetChildren()) do
-                if child:IsA("ImageLabel") then
-                    if buttonIndex <= #currentPageAnimations then
-                        local clickDetector = child:FindFirstChild("ClickDetector") or Instance.new("TextButton")
-                        clickDetector.Name = "ClickDetector"
-                        clickDetector.Size = UDim2.new(1, 0, 1, 0)
-                        clickDetector.Position = UDim2.new(0, 0, 0, 0)
-                        clickDetector.BackgroundTransparency = 1
-                        clickDetector.Text = ""
-                        clickDetector.ZIndex = child.ZIndex + 1
-                        clickDetector.Parent = child
-                        
-                        local animationData = currentPageAnimations[buttonIndex]
-                        
-                        if favoriteEnabled then
-                            local isFavorite = isInFavorites(animationData.id)
-                            updateFavoriteIcon(child, animationData.id, isFavorite)
-                        else
-                            local favoriteIcon = child:FindFirstChild("FavoriteIcon")
-                            if favoriteIcon then
-                                favoriteIcon:Destroy()
-                            end
-                        end
-
-                        local connection = clickDetector.MouseButton1Click:Connect(function()
-                            if favoriteEnabled then
-                                toggleFavoriteAnimation(animationData)
-                            else
-                                applyAnimation(animationData)
-                            end
-                        end)
-                        
-                        table.insert(emoteClickConnections, connection)
-                        buttonIndex = buttonIndex + 1
-                    else
-                        local favoriteIcon = child:FindFirstChild("FavoriteIcon")
-                        if favoriteIcon then
-                            favoriteIcon:Destroy()
-                        end
-                    end
-                end
-            end
-        end
-        
-        task.wait(0.1)
-    end
-end
-
-local function stopEmoteClickDetection()
-    isMonitoringClicks = false
-    
-    for _, connection in pairs(emoteClickConnections) do
-        if connection then
-            connection:Disconnect()
-        end
-    end
-    emoteClickConnections = {}
-    
-    local success, frontFrame = pcall(function()
-        return game:GetService("CoreGui").RobloxGui.EmotesMenu.Children.Main.EmotesWheel.Front.EmotesButtons
-    end)
-    
-    if success and frontFrame then
-        for _, child in pairs(frontFrame:GetChildren()) do
-            if child:IsA("ImageLabel") then
-                local clickDetector = child:FindFirstChild("ClickDetector")
-                if clickDetector then
-                    clickDetector:Destroy()
-                end
-                
-                local favoriteIcon = child:FindFirstChild("FavoriteIcon")
-                if favoriteIcon then
-                    favoriteIcon:Destroy()
-                end
-            end
-        end
-    end
-end
-
-local function fetchAllEmotes()
-    if isLoading then
-        return
-    end
-    isLoading = true
-    emotesData = {}
-    totalEmotesLoaded = 0
-
-    local success, result = pcall(function()
-        local jsonContent = game:HttpGet("https://raw.githubusercontent.com/7yd7/sniper-Emote/refs/heads/test/EmoteSniper.json")
-        
-        if jsonContent and jsonContent ~= "" then
-            local data = HttpService:JSONDecode(jsonContent)
-            return data.data or {}
-        else
-            return nil
-        end
-    end)
-
-    if success and result then
-        for _, item in pairs(result) do
-            local emoteData = {
-                id = tonumber(item.id),
-                name = item.name or ("Emote_" .. (item.id or "Unknown"))
-            }
-            if emoteData.id and emoteData.id > 0 then
-                table.insert(emotesData, emoteData)
-                totalEmotesLoaded = totalEmotesLoaded + 1
-            end
-        end
-    else
-        emotesData = {
-            {id = 3360686498, name = "Stadium"},
-            {id = 3360692915, name = "Tilt"},
-            {id = 3576968026, name = "Shrug"},
-            {id = 3360689775, name = "Salute"}
-        }
-        totalEmotesLoaded = #emotesData
-    end
-
-    originalEmotesData = emotesData
-    filteredEmotes = emotesData
-
-    totalPages = calculateTotalPages()
-    currentPage = 1
-    updatePageDisplay()
-    updateEmotes()
-    
-    getgenv().Notify({
-        Title = '7yd7 | Emote',
-        Content = "🎉 Loaded Successfully! Total Emotes: " .. totalEmotesLoaded,
-        Duration = 5
-    })
-    
-    isLoading = false
-end
-
-local function fetchAllAnimations()
-    if isLoading then
-        return
-    end
-    isLoading = true
-    animationsData = {}
-    
-    local success, result = pcall(function()
-        local jsonContent = game:HttpGet("https://raw.githubusercontent.com/7yd7/sniper-Emote/refs/heads/test/AnimationSniper.json")
-        
-        if jsonContent and jsonContent ~= "" then
-            local data = HttpService:JSONDecode(jsonContent)
-            return data.data or {}
-        else
-            return nil
-        end
-    end)
-
-    if success and result then
-        for _, item in pairs(result) do
-            local animationData = {
-                id = tonumber(item.id),
-                name = item.name or ("Animation_" .. (item.id or "Unknown")),
-                bundledItems = item.bundledItems
-            }
-            if animationData.id and animationData.id > 0 then
-                table.insert(animationsData, animationData)
-            end
-        end
-    end
-
-    originalAnimationsData = animationsData
-    filteredAnimations = animationsData
-    isLoading = false
-end
-
-local function searchEmotes(searchTerm)
-    if isLoading then
-        getgenv().Notify({
-            Title = '7yd7 | Emote',
-            Content = '⚠️ Loading please wait...',
-            Duration = 5
-        })
-        return
-    end
-
-    searchTerm = searchTerm:lower()
-
-    if searchTerm == "" then
-        filteredEmotes = originalEmotesData
-        if _G.originalFavoritesBackup then
-            _G.originalFavoritesBackup = nil
-        end
-        _G.filteredFavoritesForDisplay = nil
-    else
-        local isIdSearch = searchTerm:match("^%d%d%d%d%d+$")
-        
-        local newFilteredList = {}
-        
-        if isIdSearch then
-            for _, emote in pairs(originalEmotesData) do
-                if tostring(emote.id) == searchTerm then
-                    table.insert(newFilteredList, emote)
-                end
-            end
-            
-            if #newFilteredList == 0 then
-                local emoteId = tonumber(searchTerm)
-                if emoteId then
-                    local emoteName = getEmoteName(emoteId)
-                    local newEmote = {
-                        id = emoteId,
-                        name = emoteName
-                    }
-                    
-                    table.insert(originalEmotesData, newEmote)
-                    table.insert(newFilteredList, newEmote)
-                end
-            end
-        else
-            for _, emote in pairs(originalEmotesData) do
-                if emote.name:lower():find(searchTerm) then
-                    table.insert(newFilteredList, emote)
-                end
-            end
-        end
-        
-        filteredEmotes = newFilteredList
-
-        if not isIdSearch then
-            if not _G.originalFavoritesBackup then
-                _G.originalFavoritesBackup = {}
-                for i, favorite in pairs(favoriteEmotes) do
-                    _G.originalFavoritesBackup[i] = {
-                        id = favorite.id,
-                        name = favorite.name
-                    }
-                end
-            end
-
-            _G.filteredFavoritesForDisplay = {}
-            for _, favorite in pairs(favoriteEmotes) do
-                if favorite.name:lower():find(searchTerm) then
-                    table.insert(_G.filteredFavoritesForDisplay, favorite)
-                end
-            end
-        end
-    end
-
-    totalPages = calculateTotalPages()
-    currentPage = 1
-    updatePageDisplay()
-    updateEmotes()
-end
-
-local function searchAnimations(searchTerm)
-    if isLoading then
-        getgenv().Notify({
-            Title = '7yd7 | Animation',
-            Content = '⚠️ Loading please wait...',
-            Duration = 5
-        })
-        return
-    end
-
-    searchTerm = searchTerm:lower()
-
-    if searchTerm == "" then
-        filteredAnimations = originalAnimationsData
-        if _G.originalAnimationFavoritesBackup then
-            _G.originalAnimationFavoritesBackup = nil
-        end
-        _G.filteredFavoritesAnimationsForDisplay = nil
-    else
-        local isIdSearch = searchTerm:match("^%d+$")
-        
-        local newFilteredList = {}
-        
-        if isIdSearch then
-            for _, animation in pairs(originalAnimationsData) do
-                if tostring(animation.id) == searchTerm then
-                    table.insert(newFilteredList, animation)
-                end
-            end
-        else
-            for _, animation in pairs(originalAnimationsData) do
-                if animation.name:lower():find(searchTerm) then
-                    table.insert(newFilteredList, animation)
-                end
-            end
-        end
-        
-        filteredAnimations = newFilteredList
-
-        if not isIdSearch then
-            if not _G.originalAnimationFavoritesBackup then
-                _G.originalAnimationFavoritesBackup = {}
-                for i, favorite in pairs(favoriteAnimations) do
-                    _G.originalAnimationFavoritesBackup[i] = {
-                        id = favorite.id,
-                        name = favorite.name,
-                        bundledItems = favorite.bundledItems
-                    }
-                end
-            end
-
-            _G.filteredFavoritesAnimationsForDisplay = {}
-            for _, favorite in pairs(favoriteAnimations) do
-                if favorite.name:lower():find(searchTerm) then
-                    table.insert(_G.filteredFavoritesAnimationsForDisplay, favorite)
-                end
-            end
-        end
-    end
-
-    totalPages = calculateTotalPages()
-    currentPage = 1
-    updatePageDisplay()
-    updateAnimations()
-end
-
-local function goToPage(pageNumber)
-    if pageNumber < 1 then
-        currentPage = 1
-    elseif pageNumber > totalPages then
-        currentPage = totalPages
-    else
-        currentPage = pageNumber
-    end
-    updatePageDisplay()
-    updateEmotes()
-end
-
-local function previousPage()
-    if currentPage <= 1 then
-        currentPage = totalPages
-    else
-        currentPage = currentPage - 1
-    end
-    updatePageDisplay()
-    updateEmotes()
-end
-
-local function nextPage()
-    if currentPage >= totalPages then
-        currentPage = 1
-    else
-        currentPage = currentPage + 1
-    end
-    updatePageDisplay()
-    updateEmotes()
-end
-
-local function stopCurrentEmote()
-    if currentEmoteTrack then
-        currentEmoteTrack:Stop()
-        currentEmoteTrack = nil
-    end
-end
-
-local function playEmote(humanoid, emoteId)
-    stopCurrentEmote()
-    stopEmotes()
-
-    local animation = Instance.new("Animation")
-    animation.AnimationId = "rbxassetid://" .. emoteId
-
-    local success, animTrack = pcall(function()
-        return humanoid.Animator:LoadAnimation(animation)
-    end)
-
-    if success and animTrack then
-        currentEmoteTrack = animTrack
-        currentEmoteTrack.Priority = Enum.AnimationPriority.Action
-        currentEmoteTrack.Looped = true
-        task.wait(0.1)
-        if speedEmoteEnabled or emotesWalkEnabled then
-            currentEmoteTrack:Play()
-
-            if speedEmoteEnabled then
-                local speedValue = tonumber(SpeedBox.Text) or 1
-                currentEmoteTrack:AdjustSpeed(speedValue)
-            end
-        end
-    end
-end
-local function onCharacterAdded(character)
-    currentCharacter = character
-    stopCurrentEmote()
-
-    local humanoid = character:WaitForChild("Humanoid")
-    local animator = humanoid:WaitForChild("Animator")
-
- if getgenv().autoReloadEnabled and getgenv().lastPlayedAnimation then
-    task.wait(.3)
-    applyAnimation(getgenv().lastPlayedAnimation)
-    getgenv().Notify({
-        Title = '7yd7 | Auto Reload Animation',
-        Content = '🔄 The last animation was automatically \n reapplied',
-        Duration = 3
-    })
-end
-
-    animator.AnimationPlayed:Connect(function(animationTrack)
-        if isDancing(character, animationTrack) then
-            local playedEmoteId = urlToId(animationTrack.Animation.AnimationId)
-
-            if emotesWalkEnabled then
-                if currentEmoteTrack then
-                    local currentEmoteId = urlToId(currentEmoteTrack.Animation.AnimationId)
-                    if currentEmoteId == playedEmoteId then
-                        return
-                    else
-                        stopCurrentEmote()
-                    end
-                end
-
-                playEmote(humanoid, playedEmoteId)
-
-                if currentEmoteTrack then
-                    currentEmoteTrack.Ended:Connect(function()
-                        if currentEmoteTrack == animationTrack then
-                            currentEmoteTrack = nil
-                        end
-                    end
-                end
-            end
-
-            if speedEmoteEnabled and not emotesWalkEnabled then
-                if currentEmoteTrack then
-                    local currentEmoteId = urlToId(currentEmoteTrack.Animation.AnimationId)
-                    if currentEmoteId == playedEmoteId then
-                        return
-                    else
-                        stopCurrentEmote()
-                    end
-                end
-
-                playEmote(humanoid, playedEmoteId)
-
-                if currentEmoteTrack then
-                    currentEmoteTrack.Ended:Connect(function()
-                        if currentEmoteTrack == animationTrack then
-                            currentEmoteTrack = nil
-                        end
-                    end)
-                end
-            end
-        end
-    end)
-
-    humanoid.Died:Connect(function()
-    emotesWalkEnabled = false
-    speedEmoteEnabled = false
-    favoriteEnabled = false
-    currentEmoteTrack = nil
-
-    stopEmotes()
-        stopCurrentEmote()
-    end)
-end
-
-local function toggleEmoteWalk()
-    emotesWalkEnabled = not emotesWalkEnabled
-
-    if emotesWalkEnabled then
-        getgenv().Notify({
-            Title = '7yd7 | Emote Freeze',
-            Content = "🔒 Emote freeze ON",
-            Duration = 5
-        })
-
-        EmoteWalkButton.Image = enabledButtonImage
-        task.wait(0.1)
-        stopCurrentEmote()
-        if currentEmoteTrack and currentEmoteTrack.IsPlaying then
-            currentEmoteTrack:AdjustSpeed(1)
-        end
-    else
-        getgenv().Notify({
-            Title = '7yd7 | Emote Freeze',
-            Content = '🔓 Emote freeze OFF',
-            Duration = 5
-        })
-        EmoteWalkButton.Image = defaultButtonImage
-        task.wait(0.1)
-        stopCurrentEmote()
-
-        if currentEmoteTrack and currentEmoteTrack.IsPlaying and speedEmoteEnabled then
-            local speedValue = tonumber(SpeedBox.Text) or 1
-            currentEmoteTrack:AdjustSpeed(speedValue)
-        elseif currentEmoteTrack and currentEmoteTrack.IsPlaying then
-            currentEmoteTrack:AdjustSpeed(1)
-        end
-    end
-end
-
-local function toggleSpeedEmote()
-    speedEmoteEnabled = not speedEmoteEnabled
-
-    SpeedBox.Visible = speedEmoteEnabled
-
-    if speedEmoteEnabled then
-        getgenv().Notify({
-            Title = '7yd7 | Speed Emote',
-            Content = "⚡ Speed Emote ON",
-            Duration = 5
-        })
-        task.wait(0.1)
-        stopCurrentEmote()
-    else
-        getgenv().Notify({
-            Title = '7yd7 | Speed Emote',
-            Content = '⚡ Speed Emote OFF',
-            Duration = 5
-        })
-        task.wait(0.1)
-        stopCurrentEmote()
-    end
-
-    if writefile then
-        writefile(speedEmoteConfigFile, HttpService:JSONEncode({
-            Enabled = speedEmoteEnabled,
-            SpeedValue = tonumber(SpeedBox.Text) or 1
-        }))
-    end
-end
-
-local function toggleFavoriteMode()
-    favoriteEnabled = not favoriteEnabled
-
-    if favoriteEnabled then
-        Favorite.Image = "rbxassetid://97307461910825"
-        getgenv().Notify({
-            Title = '7yd7 | Favorite System',
-            Content = "🔒 Favorite ON",
-            Duration = 5
-        })
-
-        getgenv().Notify({
-            Title = '7yd7 | Favorite System',
-            Content = "⚠️ Click on any item to add/remove from \n favorites ( Click to image )",
-            Duration = 5
-        })
-        
-        if currentMode == "emote" then
-            setupEmoteClickDetection()
-        else 
-            updateAllFavoriteIcons()
-        end
-    else
-        Favorite.Image = "rbxassetid://124025954365505"
-        getgenv().Notify({
-            Title = '7yd7 | Favorite System',
-            Content = '🔓 Favorite OFF',
-            Duration = 3
-        })
-        
-        if currentMode == "emote" then
-            stopEmoteClickDetection()
-        else
-            updateAllFavoriteIcons()
-        end
-    end
-end
-
-local clickCooldown = {}
-local CLICK_COOLDOWN_TIME = 0.1
-
-local function safeButtonClick(buttonName, callback)
-    local currentTime = tick()
-    if not clickCooldown[buttonName] or (currentTime - clickCooldown[buttonName]) > CLICK_COOLDOWN_TIME then
-        clickCooldown[buttonName] = currentTime
-        callback()
-    end
-end
-
-local function setupAnimationClickDetection()
-    if isMonitoringClicks then
-        return
-    end
-    
-    if currentMode == "animation" then
-        isMonitoringClicks = true
-        task.spawn(monitorAnimations)
-    end
-end
-
-local function toggleAutoReload()
-    getgenv().autoReloadEnabled = not getgenv().autoReloadEnabled
-    
-    if getgenv().autoReloadEnabled then
-        getgenv().Notify({
-            Title = '7yd7 | Auto Reload Animation',
-            Content = "🔄 Auto Reload ON",
-            Duration = 5
-        })
-    else
-        getgenv().Notify({
-            Title = '7yd7 | Auto Reload Animation',
-            Content = '🔄 Auto Reload OFF',
-            Duration = 3
-        })
-    end
-end
-
-function connectEvents()
-    if _1left then
-        _1left.MouseButton1Click:Connect(previousPage)
-    end
-
-    if _9right then
-        _9right.MouseButton1Click:Connect(nextPage)
-    end
-
-      if _2Routenumber then
-        _2Routenumber.FocusLost:Connect(function(enterPressed)
-            local pageNum = tonumber(_2Routenumber.Text)
-            if pageNum then
-                goToPage(pageNum)
-            else
-                _2Routenumber.Text = tostring(currentPage)
-            end
-        end)
-    end
-
-    if Search then
-        Search.Changed:Connect(function(property)
-            if property == "Text" then
-                if currentMode == "emote" then
-                    emoteSearchTerm = Search.Text
-                    searchEmotes(emoteSearchTerm)
-                else
-                    animationSearchTerm = Search.Text
-                    searchAnimations(animationSearchTerm)
-                end
-            end
-        end)
-    end
-
-    if EmoteWalkButton then
-        EmoteWalkButton.MouseButton1Click:Connect(function()
-            safeButtonClick("EmoteWalk", toggleEmoteWalk)
-        end)
-    end
-
-    if Favorite then
-        Favorite.MouseButton1Click:Connect(function()
-            safeButtonClick("Favorite", toggleFavoriteMode)
-        end)
-    end
-
-    if SpeedEmote then
-        SpeedEmote.MouseButton1Click:Connect(function()
-            safeButtonClick("SpeedEmote", toggleSpeedEmote)
-        end)
-    end
-
-    if Reload then
-    Reload.MouseButton1Click:Connect(function()
-        safeButtonClick("AutoReload", toggleAutoReload)
-    end)
-end
-
-if Changepage then
-    Changepage.MouseButton1Click:Connect(function()
-        stopEmoteClickDetection()
-        
-        if currentMode == "emote" then
-            currentMode = "animation"
-            
-            spawn(function()
-                fetchAllAnimations()
-                Search.Text = animationSearchTerm
-                currentPage = 1
-                totalPages = calculateTotalPages()
-                updatePageDisplay()
-                updateEmotes()
-                isMonitoringClicks = true
-                task.spawn(monitorAnimations)
-            end)
-            
-            getgenv().Notify({
-                Title = '7yd7 | Animation',
-                Content = '📄 Changed to Emote > Animation Mode',
-                Duration = 3
-            })
-
-         getgenv().Notify({
-            Title = '7yd7 | Animation',
-            Content = "⚠️ Click on any Animation ( Click to image )",
-            Duration = 5
-        })
-        else
-            currentMode = "emote"
-            Search.Text = emoteSearchTerm
-            currentPage = 1
-            totalPages = calculateTotalPages()
-            updatePageDisplay() 
-            updateEmotes()
-            
-            if favoriteEnabled then
-                setupEmoteClickDetection()
-            end
-            
-            getgenv().Notify({
-                Title = '7yd7 | Emote', 
-                Content = '📄 Changed to Animation > Emote Mode',
-                Duration = 3
-            })
-        end
-    end)
-end
-
-    if SpeedBox then
-        SpeedBox.FocusLost:Connect(function()
-            if writefile then
-                writefile(speedEmoteConfigFile, HttpService:JSONEncode({
-                    Enabled = speedEmoteEnabled,
-                    SpeedValue = tonumber(SpeedBox.Text) or 1
-                }))
-            end
-        end)
-    end
-end
-
-local function checkAndRecreateGUI()
-    local exists, emotesWheel = checkEmotesMenuExists()
-    if not exists then
-        isGUICreated = false
-        return
-    end
-
-    if not emotesWheel:FindFirstChild("Under") or not emotesWheel:FindFirstChild("Top") or
-        not emotesWheel:FindFirstChild("EmoteWalkButton") or not emotesWheel:FindFirstChild("Favorite") or
-        not emotesWheel:FindFirstChild("SpeedEmote") or not emotesWheel:FindFirstChild("SpeedBox") or
-        not emotesWheel:FindFirstChild("Changepage") or not emotesWheel:FindFirstChild("Reload") then
-        isGUICreated = false
-        if createGUIElements() then
-            updatePageDisplay()
-            updateEmotes()
-            loadSpeedEmoteConfig()
-        end
-    end
-end
-
--- Inicialización principal
-if player.Character then
-    onCharacterAdded(player.Character)
-end
-
-player.CharacterAdded:Connect(function(character)
-    onCharacterAdded(character)
-    task.wait(0.3) 
-    spawn(function()
-        while not checkEmotesMenuExists() do
-            task.wait(0.1) 
-        end
-        task.wait(0.3) 
-        stopEmotes()
-        if createGUIElements() then
-            if #emotesData > 0 then
-                updatePageDisplay()
-                updateEmotes()
-                loadSpeedEmoteConfig()
-            end
-        end
-    end)
-end)
-
-player.CharacterAdded:Connect(function(newChar)
-    character = newChar
-    humanoid = newChar:WaitForChild("Humanoid")
-    emotesWalkEnabled = false
-    speedEmoteEnabled = false
-    favoriteEnabled = false
-    currentEmoteTrack = nil
-    stopEmotes()
-end)
-
--- Cargar favoritos y datos
-spawn(function()
-    while not checkEmotesMenuExists() do
-        wait(0.1)
-    end
-    if createGUIElements() then
-        loadFavorites()
-        loadFavoritesAnimations()
-        fetchAllEmotes()
-        loadSpeedEmoteConfig()
-    end
-end)
-
--- Notificación final
-getgenv().Notify({
-    Title = '7yd7 | Emote',
-    Content = '✅ Script cargado! Presiona , (COMA) para abrir',
-    Duration = 10
-})
-
-print("🎮 Emote Script Cargado - Usa la tecla , (COMA) para abrir")
+    UICorner

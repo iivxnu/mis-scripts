@@ -32,9 +32,6 @@ local humanoid = character:WaitForChild("Humanoid")
 local UserInputService = game:GetService("UserInputService")
 local CoreGui = game:GetService("CoreGui")
 
--- CONFIGURACIÓN DE TECLA COMA - MODIFICADO
-local OPEN_KEY = Enum.KeyCode.Comma
-
 local emoteClickConnections = {}
 local isMonitoringClicks = false
 local currentTimer = nil
@@ -114,39 +111,6 @@ local enabledButtonImage = "rbxassetid://106798555684020"
 
 local favoriteIconId = "rbxassetid://97307461910825" 
 local notFavoriteIconId = "rbxassetid://124025954365505"
-
--- FUNCIÓN PARA ABRIR/CERRAR CON COMA - NUEVA
-local function toggleEmotesMenu()
-    local coreGui = game:GetService("CoreGui")
-    local robloxGui = coreGui:FindFirstChild("RobloxGui")
-    
-    if robloxGui then
-        local emotesMenu = robloxGui:FindFirstChild("EmotesMenu")
-        if emotesMenu then
-            local isEnabled = emotesMenu.Enabled
-            emotesMenu.Enabled = not isEnabled
-            
-            if not isEnabled then
-                getgenv().Notify({
-                    Title = '7yd7 | Emote',
-                    Content = '📱 Menú abierto con COMA',
-                    Duration = 3
-                })
-            end
-        else
-            game:GetService("StarterGui"):SetCoreGuiEnabled(Enum.CoreGuiType.EmotesMenu, true)
-        end
-    end
-end
-
--- DETECTOR DE TECLA COMA - NUEVO
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    if gameProcessed then return end
-    
-    if input.KeyCode == OPEN_KEY then
-        toggleEmotesMenu()
-    end
-end)
 
 local function getCharacterAndHumanoid()
     local character = player.Character
@@ -885,4 +849,26 @@ local function createGUIElements()
     SpeedBox.ZIndex = 2
 
     UICorner_4.CornerRadius = UDim.new(0, 10)
-    UICorner
+    UICorner_4.Parent = SpeedBox
+
+    SpeedEmote.Name = "SpeedEmote"
+    SpeedEmote.Parent = emotesWheel
+    SpeedEmote.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    SpeedEmote.BackgroundTransparency = 0.400
+    SpeedEmote.BorderColor3 = Color3.fromRGB(0, 0, 0)
+    SpeedEmote.BorderSizePixel = 0
+    SpeedEmote.Position = UDim2.new(0.888999999, 0, -0, 0)
+    SpeedEmote.Size = UDim2.new(0.0874999985, 0, 0.0874999985, 0)
+    SpeedEmote.Image = "rbxassetid://116056570415896"
+    SpeedEmote.ZIndex = 2
+
+    UICorner_2.CornerRadius = UDim.new(0, 10)
+    UICorner_2.Parent = SpeedEmote
+
+Changepage.Name = "Changepage"
+Changepage.Parent = emotesWheel
+Changepage.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+Changepage.BackgroundTransparency = 0.400
+Changepage.BorderColor3 = Color3.fromRGB(0, 0, 0)
+Changepage.BorderSizePixel = 0
+Changep

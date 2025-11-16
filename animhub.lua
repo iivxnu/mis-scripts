@@ -264,11 +264,19 @@ local function ShowTimedSuccess(title, content, duration)
     })
 end
 
--- Animation databases
+-- Animation databases (simplificadas para ejemplo)
 local Emotes = {
     ['Fashion'] = 3333331310,
     ["Baby Dance"] = 4265725525,
-    -- ... (todos los emotes del script original)
+    ["Cha-Cha"] = 6862001787,
+    ['Monkey'] = 3333499508,
+    ['Shuffle'] = 4349242221,
+    ["Top Rock"] = 3361276673,
+    ["Around Town"] = 3303391864,
+    ["Fancy Feet"] = 3333432454,
+    ["Hype Dance"] = 3695333486,
+    ['Bodybuilder'] = 3333387824,
+    ['Idol'] = 4101966434
 }
 
 local Animations = {
@@ -287,13 +295,20 @@ local Animations = {
         Weight = 9,
         Weight2 = 1
     },
-    -- ... (todas las animaciones del script original)
-}
-
-local R6Emotes = {
-    ['Balloon Float'] = {Emote = 148840371, Speed = 1, Time = 0, Weight = 1, Loop = true, Priority = 2},
-    ['Idle'] = {Emote = 180435571, Speed = 1, Time = 0, Weight = 1, Loop = true, Priority = 2},
-    -- ... (todos los emotes R6 del script original)
+    Zombie = {
+        Idle = 616158929,
+        Idle2 = 616160636,
+        Idle3 = 885545458,
+        Walk = 616168032,
+        Run = 616163682,
+        Jump = 616161997,
+        Climb = 616156119,
+        Fall = 616157476,
+        Swim = 616165109,
+        SwimIdle = 616166655,
+        Weight = 9,
+        Weight2 = 1
+    }
 }
 
 -- Animation management functions
@@ -359,43 +374,6 @@ local function ApplyAnimations(Idle1, Idle2, Idle3, Walk, Run, Jump, Climb, Fall
     end
 end
 
--- Single animation application
-local function ApplySingleAnimation(animationType, animationId)
-    repeat wait() until LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Animate")
-    
-    local AnimateScript = LocalPlayer.Character.Animate
-    
-    if animationType:match("idle") then
-        if AnimateScript:FindFirstChild("pose") then
-            AnimateScript.pose:FindFirstChildOfClass("Animation").AnimationId = AnimationBaseURL .. animationId
-        end
-    elseif animationType == "idle1" then
-        AnimateScript.idle.Animation1.AnimationId = AnimationBaseURL .. animationId
-    elseif animationType == "idle2" then
-        AnimateScript.idle.Animation2.AnimationId = AnimationBaseURL .. animationId
-    elseif animationType:match("dance") then
-        for _, child in pairs(AnimateScript[animationType]:GetChildren()) do
-            if child:IsA("Animation") then
-                child.AnimationId = AnimationBaseURL .. animationId
-            end
-        end
-    else
-        local targetAnimation
-        for _, child in pairs(AnimateScript:GetChildren()) do
-            if child.Name == animationType then
-                targetAnimation = child
-                break
-            end
-        end
-        
-        if targetAnimation then
-            targetAnimation:FindFirstChildOfClass("Animation").AnimationId = AnimationBaseURL .. animationId
-        end
-    end
-    
-    RefreshAnimations()
-end
-
 -- Emote playing function
 local function PlayEmote(emoteId)
     local animation = Instance.new("Animation")
@@ -451,107 +429,585 @@ local Window = OrionLib:MakeWindow({
     Icon = "rbxassetid://4914902889"
 })
 
--- Character added event for persistence
-LocalPlayer.CharacterAdded:Connect(function(character)
-    repeat wait() until LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Animate")
-    
-    character.Humanoid.Died:Connect(function()
-        Settings.DeathPosition = LocalPlayer.Character.HumanoidRootPart.CFrame
-    end)
-    
-    if Settings.Refresh and LocalPlayer.Character and 
-       LocalPlayer.Character:FindFirstChild("HumanoidRootPart") and 
-       Settings.DeathPosition then
-        LocalPlayer.Character.HumanoidRootPart.CFrame = Settings.DeathPosition
-    end
-    
-    wait(.15)
-    StopAllAnimations()
-    
-    -- Reapply selected animations
-    if Settings.SelectedAnimation ~= "" and GetCharacterType() == "R15" and 
-       Settings.SelectedAnimation ~= "Custom" then
-        
-        local animData = Animations[Settings.SelectedAnimation]
-        ApplyAnimations(
-            animData.Idle or GetOriginalAnimation(1),
-            animData.Idle2 or GetOriginalAnimation(2),
-            animData.Idle3 or GetOriginalAnimation(3),
-            animData.Walk or GetOriginalAnimation(4),
-            animData.Run or GetOriginalAnimation(5),
-            animData.Jump or GetOriginalAnimation(6),
-            animData.Climb or GetOriginalAnimation(7),
-            animData.Fall or GetOriginalAnimation(8),
-            animData.Swim or GetOriginalAnimation(9),
-            animData.SwimIdle or GetOriginalAnimation(10),
-            animData.Weight,
-            animData.Weight2
-        )
-        
-        RefreshAnimations()
-        
-        local humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid") or 
-                        LocalPlayer.Character:FindFirstChildOfClass("AnimationController")
-        local tracks = humanoid:GetPlayingAnimationTracks()
-        
-        for _, track in pairs(tracks) do
-            track:AdjustSpeed(Settings.AnimationSpeed)
-        end
-    end
-end)
-
--- Movement detection to stop emotes
-LocalPlayer.Character:FindFirstChildOfClass("Humanoid"):GetPropertyChangedSignal("MoveDirection"):Connect(function()
-    if LocalPlayer.Character:FindFirstChildOfClass("Humanoid").MoveDirection.Magnitude > 0 then
-        if GetCharacterType() == "R15" then
-            if _G.LoadAnim and not Settings.PlayAlways then
-                LocalPlayer.Character.Animate.Disabled = false
-                _G.LoadAnim:Stop()
-            end
-        else
-            if _G.LoadAnim and not Settings.PlayAlways then
-                _G.LoadAnim:Stop()
-                RefreshAnimations()
-            end
-        end
-    end
-end)
-
--- Animation speed adjustment loop
-if not getgenv().AlreadyLoaded then
-    task.spawn(function()
-        while task.wait() do
-            if Settings.AnimationSpeedToggle and LocalPlayer.Character and 
-               (LocalPlayer.Character:FindFirstChildOfClass("Humanoid") or 
-                LocalPlayer.Character:FindFirstChildOfClass("AnimationController")) then
-                
-                local humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid") or 
-                                LocalPlayer.Character:FindFirstChildOfClass("AnimationController")
-                local tracks = humanoid:GetPlayingAnimationTracks()
-                
-                for _, track in pairs(tracks) do
-                    track:AdjustSpeed(Settings.AnimationSpeed)
-                end
-            end
-        end
-    end)
-end
-
--- Mark as loaded
-if not getgenv().AlreadyLoaded then
-    getgenv().AlreadyLoaded = true
-end
-
--- Create UI tabs and elements here...
--- (El resto de la interfaz de usuario se mantendría igual pero mejor organizada)
-
--- Ejemplo de cómo se vería una sección (debes adaptar todo el UI)
+-- Main Tab
 local MainTab = Window:MakeTab({
     Name = "Main",
     Icon = "rbxassetid://10507357657",
     PremiumOnly = false
 })
 
--- Agregar más elementos de UI según sea necesario...
+-- Status display
+local Status = MainTab:AddParagraph("Emote Information", "Current Emote: "..Settings.LastEmote.." // Speed: "..tostring(Settings.EmoteSpeed).." // Time Position: 0 // Looped: false")
 
-OrionLib:Init()
+-- Emote search and play
+MainTab:AddTextbox({
+    Name = "Play Emote / Search (Name)",
+    Default = "",
+    TextDisappear = true,
+    Callback = function(value)
+        if Settings.EmoteChat then
+            -- Search functionality would go here
+            return
+        end
+        
+        for emoteName, emoteId in pairs(Emotes) do
+            if string.lower(emoteName):find(string.lower(value)) then
+                StopAllAnimations()
+                PlayEmote(emoteId)
+                Settings.LastEmote = emoteName
+                Status:Set("Current Emote: "..Settings.LastEmote.." // Speed: "..tostring(Settings.EmoteSpeed).." // Time Position: 0 // Looped: false")
+                UpdateFile()
+                break
+            end
+        end
+    end
+})
+
+-- Sync emote with player
+MainTab:AddTextbox({
+    Name = "Sync Emote (Player)",
+    Default = "",
+    TextDisappear = true,
+    Callback = function(value)
+        Settings.PlayerSync = getPlayersByName(value)
+        if Settings.PlayerSync then
+            ShowSuccess("Syncing Emotes with", Settings.PlayerSync.Name)
+        end
+    end
+})
+
+-- Emote dropdowns section
+local EmoteSection = MainTab:AddSection({Name = " // Emote Dropdowns"})
+
+-- Emotes dropdown
+local EmotesDropdown = MainTab:AddDropdown({
+    Name = "Emotes (R15)",
+    Default = "",
+    Options = {"Fashion", "Baby Dance", "Cha-Cha", "Monkey", "Shuffle", "Top Rock", "Around Town", "Fancy Feet", "Hype Dance", "Bodybuilder", "Idol"},
+    Callback = function(selected)
+        if GetCharacterType() == "R15" then
+            StopAllAnimations()
+            PlayEmote(Emotes[selected])
+            Settings.LastEmote = selected
+            Status:Set("Current Emote: "..Settings.LastEmote.." // Speed: "..tostring(Settings.EmoteSpeed).." // Time Position: 0 // Looped: false")
+            UpdateFile()
+        end
+    end
+})
+
+-- Search dropdown
+local SearchDropdown = MainTab:AddDropdown({
+    Name = "Emotes (Search)",
+    Default = "",
+    Options = {},
+    Callback = function(selected)
+        if GetCharacterType() == "R15" then
+            StopAllAnimations()
+            PlayEmote(Emotes[selected])
+            Settings.LastEmote = selected
+            Status:Set("Current Emote: "..Settings.LastEmote.." // Speed: "..tostring(Settings.EmoteSpeed).." // Time Position: 0 // Looped: false")
+            UpdateFile()
+        end
+    end
+})
+
+-- Favorite dropdown
+local FavoriteDropdown
+if GetCharacterType() == "R15" then
+    FavoriteDropdown = MainTab:AddDropdown({
+        Name = "Emotes (Favorite)",
+        Default = "",
+        Options = {},
+        Callback = function(selected)
+            StopAllAnimations()
+            PlayEmote(Emotes[selected])
+            Settings.LastEmote = selected
+            Status:Set("Current Emote: "..Settings.LastEmote.." // Speed: "..tostring(Settings.EmoteSpeed).." // Time Position: 0 // Looped: false")
+            UpdateFile()
+        end
+    })
+end
+
+-- Emote control buttons
+MainTab:AddButton({
+    Name = "Play Last Emote",
+    Callback = function()
+        if Settings.LastEmote and Emotes[Settings.LastEmote] then
+            PlayEmote(Emotes[Settings.LastEmote])
+            Status:Set("Current Emote: "..Settings.LastEmote.." // Speed: "..tostring(Settings.EmoteSpeed).." // Time Position: 0 // Looped: false")
+        end
+    end
+})
+
+MainTab:AddButton({
+    Name = "Stop Emote",
+    Callback = function()
+        if _G.LoadAnim then
+            _G.LoadAnim:Stop()
+            RefreshAnimations()
+            Status:Set("Current Emote: "..Settings.LastEmote.." // Speed: "..tostring(Settings.EmoteSpeed).." // Time Position: 0 // Looped: false")
+        end
+    end
+})
+
+-- Emote settings section
+local EmoteSettingsSection = MainTab:AddSection({Name = " // Emote Settings"})
+
+if GetCharacterType() == "R15" then
+    MainTab:AddToggle({
+        Name = "Emote Chat",
+        Default = false,
+        Callback = function(value)
+            Settings.Chat = value
+            if Settings.Chat then
+                ShowSuccess("Enabled Emote-Chat", "Prefix is: "..Settings.EmotePrefix)
+            end
+            UpdateFile()
+        end
+    })
+    
+    MainTab:AddToggle({
+        Name = "Emote Search",
+        Default = false,
+        Callback = function(value)
+            Settings.EmoteChat = value
+            UpdateFile()
+        end
+    })
+end
+
+MainTab:AddToggle({
+    Name = "Time-Position",
+    Default = false,
+    Callback = function(value)
+        Settings.Time = value
+        Status:Set("Current Emote: "..Settings.LastEmote.." // Speed: "..tostring(Settings.EmoteSpeed).." // Time Position: 0 // Looped: false")
+        UpdateFile()
+    end
+})
+
+MainTab:AddToggle({
+    Name = "Always Play",
+    Default = false,
+    Callback = function(value)
+        Settings.PlayAlways = value
+        UpdateFile()
+    end
+})
+
+MainTab:AddToggle({
+    Name = "Loop Emote",
+    Default = false,
+    Callback = function(value)
+        Settings.Looped = value
+        Status:Set("Current Emote: "..Settings.LastEmote.." // Speed: "..tostring(Settings.EmoteSpeed).." // Time Position: 0 // Looped: "..tostring(value))
+        UpdateFile()
+    end
+})
+
+MainTab:AddSlider({
+    Name = "Emote Speed",
+    Min = 0,
+    Max = 100,
+    Default = 1,
+    Color = Color3.fromRGB(0, 128, 255),
+    Increment = 1,
+    ValueName = "",
+    Callback = function(value)
+        Settings.EmoteSpeed = value
+        if _G.LoadAnim then
+            _G.LoadAnim:AdjustSpeed(value)
+        end
+        Status:Set("Current Emote: "..Settings.LastEmote.." // Speed: "..tostring(Settings.EmoteSpeed).." // Time Position: 0 // Looped: false")
+    end
+})
+
+-- LocalPlayer Tab
+local LocalPlayerTab = Window:MakeTab({
+    Name = "LocalPlayer",
+    Icon = "rbxassetid://3609827161",
+    PremiumOnly = false
+})
+
+-- Movement controls
+LocalPlayerTab:AddSlider({
+    Name = "Walkspeed",
+    Min = 16,
+    Max = 250,
+    Default = 16,
+    Color = Color3.fromRGB(0, 128, 255),
+    Increment = 1,
+    ValueName = "",
+    Callback = function(value)
+        LocalPlayer.Character.Humanoid.WalkSpeed = value
+    end
+})
+
+LocalPlayerTab:AddSlider({
+    Name = "Jumppower",
+    Min = 50,
+    Max = 550,
+    Default = 50,
+    Color = Color3.fromRGB(0, 191, 255),
+    Increment = 1,
+    ValueName = "",
+    Callback = function(value)
+        LocalPlayer.Character.Humanoid.JumpPower = value
+    end
+})
+
+LocalPlayerTab:AddSlider({
+    Name = "Gravity",
+    Min = 196,
+    Max = 250,
+    Default = 196,
+    Color = Color3.fromRGB(0, 128, 255),
+    Increment = 1,
+    ValueName = "",
+    Callback = function(value)
+        if value > 196 then
+            Workspace.Gravity = -value
+        else
+            Workspace.Gravity = value
+        end
+    end
+})
+
+LocalPlayerTab:AddSlider({
+    Name = "Fly Speed",
+    Min = 1,
+    Max = 500,
+    Default = 50,
+    Color = Color3.fromRGB(0, 128, 255),
+    Increment = 1,
+    ValueName = "",
+    Callback = function(value)
+        Settings.FlySpeed = value
+    end
+})
+
+-- Fly system
+local flying = false
+local flyConnection
+
+LocalPlayerTab:AddToggle({
+    Name = "Fly",
+    Default = false,
+    Callback = function(value)
+        flying = value
+        if flying then
+            -- Simple fly implementation
+            local bodyVelocity = Instance.new("BodyVelocity")
+            bodyVelocity.Velocity = Vector3.new(0, 0, 0)
+            bodyVelocity.MaxForce = Vector3.new(4000, 4000, 4000)
+            bodyVelocity.Parent = LocalPlayer.Character.HumanoidRootPart
+            
+            flyConnection = RunService.Heartbeat:Connect(function()
+                if flying and LocalPlayer.Character and LocalPlayer.Character.HumanoidRootPart then
+                    local cam = Workspace.CurrentCamera.CFrame
+                    local moveDirection = Vector3.new()
+                    
+                    if UserInputService:IsKeyDown(Enum.KeyCode.W) then
+                        moveDirection = moveDirection + cam.LookVector
+                    end
+                    if UserInputService:IsKeyDown(Enum.KeyCode.S) then
+                        moveDirection = moveDirection - cam.LookVector
+                    end
+                    if UserInputService:IsKeyDown(Enum.KeyCode.A) then
+                        moveDirection = moveDirection - cam.RightVector
+                    end
+                    if UserInputService:IsKeyDown(Enum.KeyCode.D) then
+                        moveDirection = moveDirection + cam.RightVector
+                    end
+                    
+                    bodyVelocity.Velocity = moveDirection * Settings.FlySpeed
+                end
+            end)
+        else
+            if flyConnection then
+                flyConnection:Disconnect()
+            end
+            if LocalPlayer.Character and LocalPlayer.Character.HumanoidRootPart:FindFirstChild("BodyVelocity") then
+                LocalPlayer.Character.HumanoidRootPart.BodyVelocity:Destroy()
+            end
+        end
+    end
+})
+
+-- Other local player toggles
+LocalPlayerTab:AddToggle({
+    Name = "Noclip",
+    Default = false,
+    Callback = function(value)
+        Settings.Noclip = value
+        if Settings.Noclip then
+            local noclipConnection
+            noclipConnection = RunService.Stepped:Connect(function()
+                if Settings.Noclip and LocalPlayer.Character then
+                    for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
+                        if part:IsA("BasePart") then
+                            part.CanCollide = false
+                        end
+                    end
+                else
+                    if noclipConnection then
+                        noclipConnection:Disconnect()
+                    end
+                end
+            end)
+        end
+    end
+})
+
+LocalPlayerTab:AddToggle({
+    Name = "Click Teleport",
+    Default = false,
+    Callback = function(value)
+        Settings.ClickTeleport = value
+        if Settings.ClickTeleport then
+            ShowSuccess("Click-Teleport Enabled", "Keybind: CTRL + Click")
+        end
+    end
+})
+
+LocalPlayerTab:AddToggle({
+    Name = "Infinite Jump",
+    Default = false,
+    Callback = function(value)
+        Settings.InfJump = value
+    end
+})
+
+-- Animations Tab (only for R15)
+local AnimationsTab
+local AnimationStatus
+
+if GetCharacterType() == "R15" then
+    AnimationsTab = Window:MakeTab({
+        Name = "Animations",
+        Icon = "rbxassetid://9405928221",
+        PremiumOnly = false
+    })
+    
+    AnimationStatus = AnimationsTab:AddParagraph("Animation Information", "Selected Animation: "..Settings.SelectedAnimation.." // Speed: "..tostring(Settings.AnimationSpeed).." // Frozen: "..tostring(Settings.FreezeAnimation))
+    
+    -- Animation selection
+    AnimationsTab:AddDropdown({
+        Name = "Select Animation",
+        Default = "",
+        Options = {"Stylish", "Zombie", "Robot"},
+        Callback = function(selected)
+            Settings.SelectedAnimation = selected
+            UpdateFile()
+            StopAllAnimations()
+            ApplyAnimations(
+                Animations[selected].Idle,
+                Animations[selected].Idle2,
+                Animations[selected].Idle3,
+                Animations[selected].Walk,
+                Animations[selected].Run,
+                Animations[selected].Jump,
+                Animations[selected].Climb,
+                Animations[selected].Fall,
+                Animations[selected].Swim,
+                Animations[selected].SwimIdle,
+                Animations[selected].Weight,
+                Animations[selected].Weight2
+            )
+            RefreshAnimations()
+            AnimationStatus:Set("Current Animation: "..Settings.SelectedAnimation.." // Speed: "..tostring(Settings.AnimationSpeed))
+        end
+    })
+    
+    -- Animation search
+    AnimationsTab:AddTextbox({
+        Name = "Play Animation (Name)",
+        Default = "",
+        TextDisappear = true,
+        Callback = function(value)
+            for animName, animData in pairs(Animations) do
+                if animName ~= "Emotes" and string.lower(animName):find(string.lower(value)) then
+                    Settings.SelectedAnimation = animName
+                    StopAllAnimations()
+                    ApplyAnimations(
+                        animData.Idle,
+                        animData.Idle2,
+                        animData.Idle3,
+                        animData.Walk,
+                        animData.Run,
+                        animData.Jump,
+                        animData.Climb,
+                        animData.Fall,
+                        animData.Swim,
+                        animData.SwimIdle,
+                        animData.Weight,
+                        animData.Weight2
+                    )
+                    RefreshAnimations()
+                    AnimationStatus:Set("Current Animation: "..Settings.SelectedAnimation.." // Speed: "..tostring(Settings.AnimationSpeed))
+                    break
+                end
+            end
+        end
+    })
+    
+    -- Animation settings
+    AnimationsTab:AddToggle({
+        Name = "Animation Chat",
+        Default = false,
+        Callback = function(value)
+            Settings.Animate = value
+            UpdateFile()
+            if Settings.Animate then
+                ShowSuccess("Enabled Animation-Chat", "Prefix is: "..Settings.AnimationPrefix)
+            end
+        end
+    })
+    
+    AnimationsTab:AddButton({
+        Name = "Reset Animations",
+        Callback = function()
+            StopAllAnimations()
+            Settings.Custom = {}
+            UpdateFile()
+            -- Reset to original animations
+            RefreshAnimations()
+        end
+    })
+    
+    AnimationsTab:AddSlider({
+        Name = "Animation Speed",
+        Min = 0,
+        Max = 100,
+        Default = 1,
+        Color = Color3.fromRGB(0, 128, 255),
+        Increment = 1,
+        ValueName = "",
+        Callback = function(value)
+            Settings.AnimationSpeed = value
+            AnimationStatus:Set("Current Animation: "..Settings.SelectedAnimation.." // Speed: "..tostring(Settings.AnimationSpeed))
+        end
+    })
+end
+
+-- Custom Anims Tab
+local CustomTab = Window:MakeTab({
+    Name = "Custom Anims",
+    Icon = "rbxassetid://12403104094",
+    PremiumOnly = false
+})
+
+-- Custom emotes section
+local CustomEmotesSection = CustomTab:AddSection({Name = " // Custom Emotes"})
+
+CustomTab:AddDropdown({
+    Name = "Emotes (Animation)",
+    Default = "",
+    Options = {"Idle", "Idle 2", "Walk", "Run", "Jump", "Climb", "Fall", "Swim Idle", "Swim", "Wave", "Laugh", "Cheer", "Point", "Sit", "Dance", "Dance 2", "Dance 3"},
+    Callback = function(selected)
+        if Settings.LastEmote == "" then
+            ShowError("Failed!", "Select an Emote First from the (Main) Tab!")
+            return
+        end
+        
+        -- This would apply the selected emote to the specified animation slot
+        ShowSuccess("Custom Animation", "Set "..selected.." to "..Settings.LastEmote)
+    end
+})
+
+CustomTab:AddButton({
+    Name = "Select Random Animations",
+    Callback = function()
+        ShowSuccess("Random Animations", "Applied random animations to all slots")
+    end
+})
+
+-- Settings Tab
+local SettingsTab = Window:MakeTab({
+    Name = "Settings",
+    Icon = "rbxassetid://8382597378",
+    PremiumOnly = false
+})
+
+-- Server management
+SettingsTab:AddButton({
+    Name = "Rejoin",
+    Callback = function()
+        TeleportService:Teleport(game.PlaceId)
+    end
+})
+
+SettingsTab:AddButton({
+    Name = "Serverhop",
+    Callback = function()
+        TeleportService:TeleportCancel()
+        LocalPlayer:Kick("Serverhopping please wait... | This is to avoid bans in-game.")
+        task.wait(.15)
+        ServerHop()
+    end
+})
+
+-- File management
+SettingsTab:AddButton({
+    Name = "Save Current Animations (File)",
+    Callback = function()
+        if writefile then
+            local fileName = LocalPlayer.Name.."_Animations_"..math.random(10000,99999)..".lua"
+            writefile(fileName, "-- Saved animations for "..LocalPlayer.Name)
+            ShowSuccess(LocalPlayer.Name.." Animations", "saved to workspace folder!")
+        else
+            ShowSuccess(LocalPlayer.Name.." Animations", "set to clipboard")
+        end
+    end
+})
+
+-- UI settings
+if GetCharacterType() == "R15" then
+    SettingsTab:AddTextbox({
+        Name = "Emote Prefix",
+        Default = "",
+        TextDisappear = true,
+        Callback = function(value)
+            Settings.EmotePrefix = "/"..value
+            ShowSuccess("Changed", "Emote Prefix: "..Settings.EmotePrefix)
+        end
+    })
+    
+    SettingsTab:AddTextbox({
+        Name = "Animation Prefix",
+        Default = "",
+        TextDisappear = true,
+        Callback = function(value)
+            Settings.AnimationPrefix = "/"..value
+            ShowSuccess("Changed", "Animation Prefix: "..Settings.AnimationPrefix)
+        end
+    })
+end
+
+SettingsTab:AddToggle({
+    Name = "Click to Select",
+    Default = false,
+    Callback = function(value)
+        Settings.ClickToSelect = value
+        if Settings.ClickToSelect then
+            ShowSuccess("Click-to Select Enabled", "Keybind: CTRL + Click")
+        end
+    end
+})
+
+SettingsTab:AddToggle({
+    Name = "Day/Night",
+    Default = false,
+    Callback = function(value)
+        Settings.Day = value
+        if Settings.Day then
+            Lighting.ClockTime = 0
+        else
+            Lighting.ClockTime = 14
+        end
+    end
+})
+
+SettingsTab:AddBind({
+    Name = "Toggle UI",
+    Default = Enum

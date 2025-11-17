@@ -217,7 +217,9 @@ local function SaveOriginalAnimations()
     if animateScript then
         if animateScript:FindFirstChild("idle") then
             OriginalAnimations.Idle = animateScript.idle.Animation1.AnimationId
-            OriginalAnimations.Idle2 = animateScript.idle.Animation2.AnimationId
+            if animateScript.idle.Animation2 then
+                OriginalAnimations.Idle2 = animateScript.idle.Animation2.AnimationId
+            end
         end
         
         local function saveAnimation(animationName)
@@ -240,86 +242,104 @@ local function SaveOriginalAnimations()
     end
 end
 
--- Función para aplicar animaciones
+-- Función mejorada para aplicar animaciones
 local function ApplyAnimations(animationData)
     local character = LocalPlayer.Character
-    if not character then return false end
-    
-    local humanoid = character:FindFirstChildOfClass("Humanoid")
-    if not humanoid then return false end
-    
-    -- Detener animaciones actuales
-    for _, track in pairs(humanoid:GetPlayingAnimationTracks()) do
-        track:Stop()
+    if not character then 
+        return false, "Personaje no encontrado"
     end
     
-    -- Aplicar nuevas animaciones
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
+    if not humanoid then 
+        return false, "Humanoid no encontrado"
+    end
+    
     local animateScript = character:FindFirstChild("Animate")
-    if animateScript then
-        -- Deshabilitar y re-habilitar para forzar la actualización
-        animateScript.Disabled = true
-        
-        -- Aplicar animaciones básicas
-        if animationData.Idle and animateScript:FindFirstChild("idle") then
-            animateScript.idle.Animation1.AnimationId = "http://www.roblox.com/asset/?id=" .. animationData.Idle
-            if animationData.Idle2 then
-                animateScript.idle.Animation2.AnimationId = "http://www.roblox.com/asset/?id=" .. animationData.Idle2
-            end
-        end
-        
-        -- Función auxiliar para aplicar animación
-        local function applyAnimation(animationName, animationId)
-            if animationId and animationId ~= "" then
-                local animationFolder = animateScript:FindFirstChild(animationName)
-                if animationFolder then
-                    local animation = animationFolder:FindFirstChildOfClass("Animation")
-                    if animation then
-                        animation.AnimationId = "http://www.roblox.com/asset/?id=" .. animationId
-                    end
+    if not animateScript then 
+        return false, "Script Animate no encontrado"
+    end
+    
+    -- Esperar un frame para asegurar que todo esté listo
+    task.wait()
+    
+    -- Deshabilitar el script Animate
+    animateScript.Disabled = true
+    
+    -- Función auxiliar para aplicar animación de forma segura
+    local function applyAnimation(animationName, animationId)
+        if animationId and animationId ~= "" then
+            local animationFolder = animateScript:FindFirstChild(animationName)
+            if animationFolder then
+                local animation = animationFolder:FindFirstChildOfClass("Animation")
+                if animation then
+                    animation.AnimationId = "http://www.roblox.com/asset/?id=" .. animationId
+                    return true
                 end
             end
         end
-        
-        -- Aplicar todas las animaciones
-        applyAnimation("walk", animationData.Walk)
-        applyAnimation("run", animationData.Run)
-        applyAnimation("jump", animationData.Jump)
-        applyAnimation("climb", animationData.Climb)
-        applyAnimation("fall", animationData.Fall)
-        applyAnimation("swim", animationData.Swim)
-        applyAnimation("swimidle", animationData.SwimIdle)
-        
-        -- Re-habilitar el script
-        animateScript.Disabled = false
-        
-        -- Aplicar velocidad
-        task.wait(0.1)
-        for _, track in pairs(humanoid:GetPlayingAnimationTracks()) do
-            track:AdjustSpeed(getgenv().AnimationSettings.AnimationSpeed)
-        end
-        
-        return true
+        return false
     end
-    return false
+    
+    -- Aplicar animaciones básicas
+    if animationData.Idle and animateScript:FindFirstChild("idle") then
+        animateScript.idle.Animation1.AnimationId = "http://www.roblox.com/asset/?id=" .. animationData.Idle
+        if animationData.Idle2 then
+            animateScript.idle.Animation2.AnimationId = "http://www.roblox.com/asset/?id=" .. animationData.Idle2
+        end
+    end
+    
+    -- Aplicar todas las animaciones
+    applyAnimation("walk", animationData.Walk)
+    applyAnimation("run", animationData.Run)
+    applyAnimation("jump", animationData.Jump)
+    applyAnimation("climb", animationData.Climb)
+    applyAnimation("fall", animationData.Fall)
+    applyAnimation("swim", animationData.Swim)
+    applyAnimation("swimidle", animationData.SwimIdle)
+    
+    -- Re-habilitar el script
+    task.wait(0.1)
+    animateScript.Disabled = false
+    
+    -- Aplicar velocidad después de un breve delay
+    task.wait(0.2)
+    for _, track in pairs(humanoid:GetPlayingAnimationTracks()) do
+        track:AdjustSpeed(getgenv().AnimationSettings.AnimationSpeed)
+    end
+    
+    return true, "Animaciones aplicadas correctamente"
 end
 
 -- Función para aplicar animación individual
 local function ApplySingleAnimation(animationType, animationId)
     local character = LocalPlayer.Character
-    if not character or not animationId or animationId == "" then return false end
+    if not character or not animationId or animationId == "" then 
+        return false, "Datos inválidos"
+    end
     
     local animateScript = character:FindFirstChild("Animate")
-    if not animateScript then return false end
+    if not animateScript then 
+        return false, "Script Animate no encontrado"
+    end
     
     local animationFolder = animateScript:FindFirstChild(animationType:lower())
-    if animationFolder then
-        local animation = animationFolder:FindFirstChildOfClass("Animation")
-        if animation then
-            animation.AnimationId = "http://www.roblox.com/asset/?id=" .. animationId
-            return true
-        end
+    if not animationFolder then 
+        return false, "Tipo de animación no encontrado: " .. animationType
     end
-    return false
+    
+    local animation = animationFolder:FindFirstChildOfClass("Animation")
+    if not animation then 
+        return false, "Animation object no encontrado"
+    end
+    
+    animation.AnimationId = "http://www.roblox.com/asset/?id=" .. animationId
+    
+    -- Forzar actualización
+    animateScript.Disabled = true
+    task.wait()
+    animateScript.Disabled = false
+    
+    return true, "Animación individual aplicada"
 end
 
 -- Función para restaurar animaciones originales
@@ -362,44 +382,41 @@ local function RestoreOriginalAnimations()
     restoreAnimation("swim")
     restoreAnimation("swimidle")
     
+    task.wait(0.1)
     animateScript.Disabled = false
     getgenv().AnimationSettings.SelectedAnimation = ""
     
     return true
 end
 
--- Crear la interfaz
+-- Crear la interfaz sin emojis ni imágenes
 local Window = Orion:MakeWindow({
-    Name = "🎭 Animations Changer",
+    Name = "Animations Changer",
     HidePremium = false,
     SaveConfig = false,
     ConfigFolder = "AnimationsConfig",
-    IntroEnabled = true,
-    IntroText = "Sistema de Animaciones R15"
+    IntroEnabled = false
 })
 
 -- Tabs principales
 local MainTab = Window:MakeTab({
-    Name = "🎯 Animaciones",
-    Icon = "rbxassetid://10723427954",
+    Name = "Animaciones",
     PremiumOnly = false
 })
 
 local CustomTab = Window:MakeTab({
-    Name = "🔧 Personalizado",
-    Icon = "rbxassetid://10723428312",
+    Name = "Personalizado",
     PremiumOnly = false
 })
 
 local SettingsTab = Window:MakeTab({
-    Name = "⚙️ Configuración",
-    Icon = "rbxassetid://10723428664",
+    Name = "Configuracion",
     PremiumOnly = false
 })
 
 -- Sección de animaciones predefinidas
 MainTab:AddSection({
-    Name = "📚 Animaciones Predefinidas"
+    Name = "Animaciones Predefinidas"
 })
 
 -- Crear lista de animaciones ordenadas alfabéticamente
@@ -416,18 +433,17 @@ local AnimationDropdown = MainTab:AddDropdown({
     Callback = function(selected)
         if selected ~= "" and AnimationLibrary[selected] then
             getgenv().AnimationSettings.SelectedAnimation = selected
-            if ApplyAnimations(AnimationLibrary[selected]) then
+            local success, message = ApplyAnimations(AnimationLibrary[selected])
+            if success then
                 Orion:MakeNotification({
-                    Name = "✅ Animación Cambiada",
+                    Name = "Exito",
                     Content = "Pack " .. selected .. " aplicado correctamente",
-                    Image = "rbxassetid://10723427954",
                     Time = 3
                 })
             else
                 Orion:MakeNotification({
-                    Name = "❌ Error",
-                    Content = "No se pudo aplicar la animación",
-                    Image = "rbxassetid://10723427954",
+                    Name = "Error",
+                    Content = message or "No se pudo aplicar la animacion",
                     Time = 3
                 })
             end
@@ -436,23 +452,28 @@ local AnimationDropdown = MainTab:AddDropdown({
 })
 
 MainTab:AddButton({
-    Name = "🔄 Aplicar Animación Seleccionada",
+    Name = "Aplicar Animacion Seleccionada",
     Callback = function()
         local selected = getgenv().AnimationSettings.SelectedAnimation
         if selected ~= "" and AnimationLibrary[selected] then
-            if ApplyAnimations(AnimationLibrary[selected]) then
+            local success, message = ApplyAnimations(AnimationLibrary[selected])
+            if success then
                 Orion:MakeNotification({
-                    Name = "✅ Éxito",
-                    Content = "Animación " .. selected .. " re-aplicada",
-                    Image = "rbxassetid://10723427954",
+                    Name = "Exito",
+                    Content = "Animacion " .. selected .. " re-aplicada",
+                    Time = 3
+                })
+            else
+                Orion:MakeNotification({
+                    Name = "Error",
+                    Content = message or "Error al re-aplicar",
                     Time = 3
                 })
             end
         else
             Orion:MakeNotification({
-                Name = "⚠️ Advertencia",
-                Content = "No hay animación seleccionada",
-                Image = "rbxassetid://10723427954",
+                Name = "Advertencia",
+                Content = "No hay animacion seleccionada",
                 Time = 3
             })
         end
@@ -460,14 +481,19 @@ MainTab:AddButton({
 })
 
 MainTab:AddButton({
-    Name = "🔄 Resetear a Animaciones Normales",
+    Name = "Resetear a Animaciones Normales",
     Callback = function()
         if RestoreOriginalAnimations() then
             getgenv().AnimationSettings.SelectedAnimation = ""
             Orion:MakeNotification({
-                Name = "✅ Animaciones Reseteadas",
+                Name = "Exito",
                 Content = "Animaciones restauradas a las normales",
-                Image = "rbxassetid://10723427954",
+                Time = 3
+            })
+        else
+            Orion:MakeNotification({
+                Name = "Error",
+                Content = "No se pudieron restaurar las animaciones",
                 Time = 3
             })
         end
@@ -476,11 +502,11 @@ MainTab:AddButton({
 
 -- Sección de velocidad
 MainTab:AddSection({
-    Name = "🎚️ Configuración de Velocidad"
+    Name = "Configuracion de Velocidad"
 })
 
 MainTab:AddSlider({
-    Name = "Velocidad de Animación",
+    Name = "Velocidad de Animacion",
     Min = 0.1,
     Max = 3,
     Default = 1,
@@ -496,12 +522,6 @@ MainTab:AddSlider({
                 for _, track in pairs(humanoid:GetPlayingAnimationTracks()) do
                     track:AdjustSpeed(value)
                 end
-                Orion:MakeNotification({
-                    Name = "🎚️ Velocidad Cambiada",
-                    Content = "Velocidad establecida a: " .. value,
-                    Image = "rbxassetid://10723427954",
-                    Time = 2
-                })
             end
         end
     end
@@ -509,11 +529,11 @@ MainTab:AddSlider({
 
 -- Sección de animaciones personalizadas
 CustomTab:AddSection({
-    Name = "🎨 Animaciones Personalizadas"
+    Name = "Animaciones Personalizadas"
 })
 
 CustomTab:AddTextbox({
-    Name = "ID Animación Idle",
+    Name = "ID Animacion Idle",
     Default = "",
     TextDisappear = true,
     Callback = function(value)
@@ -522,7 +542,7 @@ CustomTab:AddTextbox({
 })
 
 CustomTab:AddTextbox({
-    Name = "ID Animación Idle 2",
+    Name = "ID Animacion Idle 2",
     Default = "",
     TextDisappear = true,
     Callback = function(value)
@@ -531,7 +551,7 @@ CustomTab:AddTextbox({
 })
 
 CustomTab:AddTextbox({
-    Name = "ID Animación Walk",
+    Name = "ID Animacion Walk",
     Default = "",
     TextDisappear = true,
     Callback = function(value)
@@ -540,7 +560,7 @@ CustomTab:AddTextbox({
 })
 
 CustomTab:AddTextbox({
-    Name = "ID Animación Run",
+    Name = "ID Animacion Run",
     Default = "",
     TextDisappear = true,
     Callback = function(value)
@@ -549,7 +569,7 @@ CustomTab:AddTextbox({
 })
 
 CustomTab:AddTextbox({
-    Name = "ID Animación Jump",
+    Name = "ID Animacion Jump",
     Default = "",
     TextDisappear = true,
     Callback = function(value)
@@ -558,7 +578,7 @@ CustomTab:AddTextbox({
 })
 
 CustomTab:AddTextbox({
-    Name = "ID Animación Climb",
+    Name = "ID Animacion Climb",
     Default = "",
     TextDisappear = true,
     Callback = function(value)
@@ -567,7 +587,7 @@ CustomTab:AddTextbox({
 })
 
 CustomTab:AddTextbox({
-    Name = "ID Animación Fall",
+    Name = "ID Animacion Fall",
     Default = "",
     TextDisappear = true,
     Callback = function(value)
@@ -575,22 +595,39 @@ CustomTab:AddTextbox({
     end
 })
 
+CustomTab:AddTextbox({
+    Name = "ID Animacion Swim",
+    Default = "",
+    TextDisappear = true,
+    Callback = function(value)
+        getgenv().AnimationSettings.CustomAnimations.Swim = value
+    end
+})
+
+CustomTab:AddTextbox({
+    Name = "ID Animacion SwimIdle",
+    Default = "",
+    TextDisappear = true,
+    Callback = function(value)
+        getgenv().AnimationSettings.CustomAnimations.SwimIdle = value
+    end
+})
+
 CustomTab:AddButton({
-    Name = "🎯 Aplicar Animaciones Personalizadas",
+    Name = "Aplicar Animaciones Personalizadas",
     Callback = function()
-        if ApplyAnimations(getgenv().AnimationSettings.CustomAnimations) then
+        local success, message = ApplyAnimations(getgenv().AnimationSettings.CustomAnimations)
+        if success then
             getgenv().AnimationSettings.SelectedAnimation = "Custom"
             Orion:MakeNotification({
-                Name = "✅ Animaciones Aplicadas",
+                Name = "Exito",
                 Content = "Animaciones personalizadas aplicadas",
-                Image = "rbxassetid://10723427954",
                 Time = 3
             })
         else
             Orion:MakeNotification({
-                Name = "❌ Error",
-                Content = "No se pudieron aplicar las animaciones",
-                Image = "rbxassetid://10723427954",
+                Name = "Error",
+                Content = message or "No se pudieron aplicar las animaciones personalizadas",
                 Time = 3
             })
         end
@@ -598,16 +635,15 @@ CustomTab:AddButton({
 })
 
 CustomTab:AddButton({
-    Name = "🧹 Limpiar Campos Personalizados",
+    Name = "Limpiar Campos Personalizados",
     Callback = function()
         getgenv().AnimationSettings.CustomAnimations = {
             Idle = "", Walk = "", Run = "", Jump = "", 
             Fall = "", Idle2 = "", Climb = "", Swim = "", SwimIdle = ""
         }
         Orion:MakeNotification({
-            Name = "🧹 Campos Limpiados",
+            Name = "Exito",
             Content = "Todos los campos personalizados fueron limpiados",
-            Image = "rbxassetid://10723427954",
             Time = 3
         })
     end
@@ -615,11 +651,11 @@ CustomTab:AddButton({
 
 -- Sección de aplicación individual
 CustomTab:AddSection({
-    Name = "🔧 Aplicar Animación Individual"
+    Name = "Aplicar Animacion Individual"
 })
 
 CustomTab:AddTextbox({
-    Name = "ID de Animación",
+    Name = "ID de Animacion",
     Default = "",
     TextDisappear = true,
     Callback = function(value)
@@ -628,7 +664,7 @@ CustomTab:AddTextbox({
 })
 
 CustomTab:AddDropdown({
-    Name = "Tipo de Animación",
+    Name = "Tipo de Animacion",
     Default = "idle",
     Options = {"idle", "walk", "run", "jump", "fall", "climb", "swim", "swimidle"},
     Callback = function(selected)
@@ -637,29 +673,27 @@ CustomTab:AddDropdown({
 })
 
 CustomTab:AddButton({
-    Name = "🎯 Aplicar Animación Individual",
+    Name = "Aplicar Animacion Individual",
     Callback = function()
         if getgenv().CurrentAnimationID and getgenv().CurrentAnimationType then
-            if ApplySingleAnimation(getgenv().CurrentAnimationType, getgenv().CurrentAnimationID) then
+            local success, message = ApplySingleAnimation(getgenv().CurrentAnimationType, getgenv().CurrentAnimationID)
+            if success then
                 Orion:MakeNotification({
-                    Name = "✅ Animación Aplicada",
-                    Content = "Animación " .. getgenv().CurrentAnimationType .. " aplicada",
-                    Image = "rbxassetid://10723427954",
+                    Name = "Exito",
+                    Content = "Animacion " .. getgenv().CurrentAnimationType .. " aplicada",
                     Time = 3
                 })
             else
                 Orion:MakeNotification({
-                    Name = "❌ Error",
-                    Content = "No se pudo aplicar la animación individual",
-                    Image = "rbxassetid://10723427954",
+                    Name = "Error",
+                    Content = message or "No se pudo aplicar la animacion individual",
                     Time = 3
                 })
             end
         else
             Orion:MakeNotification({
-                Name = "⚠️ Advertencia",
-                Content = "Ingresa un ID y selecciona un tipo de animación",
-                Image = "rbxassetid://10723427954",
+                Name = "Advertencia",
+                Content = "Ingresa un ID y selecciona un tipo de animacion",
                 Time = 3
             })
         end
@@ -668,38 +702,31 @@ CustomTab:AddButton({
 
 -- Configuración
 SettingsTab:AddSection({
-    Name = "🔧 Opciones Generales"
+    Name = "Opciones Generales"
 })
 
 SettingsTab:AddToggle({
-    Name = "🔄 Auto Aplicar al Respawn",
+    Name = "Auto Aplicar al Respawn",
     Default = false,
     Callback = function(value)
         getgenv().AnimationSettings.AutoApply = value
-        Orion:MakeNotification({
-            Name = value and "✅ Auto Aplicar Activado" or "❌ Auto Aplicar Desactivado",
-            Content = value and "Las animaciones se aplicarán automáticamente al respawn" or "Las animaciones no se aplicarán automáticamente",
-            Image = "rbxassetid://10723427954",
-            Time = 3
-        })
     end
 })
 
 SettingsTab:AddButton({
-    Name = "💾 Guardar Animaciones Originales",
+    Name = "Guardar Animaciones Originales",
     Callback = function()
         SaveOriginalAnimations()
         Orion:MakeNotification({
-            Name = "✅ Animaciones Guardadas",
+            Name = "Exito",
             Content = "Animaciones originales guardadas correctamente",
-            Image = "rbxassetid://10723427954",
             Time = 3
         })
     end
 })
 
 SettingsTab:AddBind({
-    Name = "🎮 Toggle UI",
+    Name = "Toggle UI",
     Default = Enum.KeyCode.RightControl,
     Hold = false,
     Callback = function()
@@ -709,15 +736,19 @@ SettingsTab:AddBind({
 
 -- Información
 SettingsTab:AddSection({
-    Name = "📊 Información"
+    Name = "Informacion"
 })
 
-SettingsTab:AddParagraph("Estado Actual", "Animación seleccionada: " .. (getgenv().AnimationSettings.SelectedAnimation ~= "" and getgenv().AnimationSettings.SelectedAnimation or "Ninguna"))
-SettingsTab:AddParagraph("Controles", "• RightControl: Abrir/Cerrar UI\n• Las animaciones se aplican automáticamente")
+SettingsTab:AddParagraph("Estado Actual", "Animacion seleccionada: " .. (getgenv().AnimationSettings.SelectedAnimation ~= "" and getgenv().AnimationSettings.SelectedAnimation or "Ninguna"))
 
--- Función para manejar el respawn del personaje
+-- Función mejorada para manejar el respawn del personaje
 LocalPlayer.CharacterAdded:Connect(function(character)
     task.wait(2) -- Esperar a que el personaje esté completamente cargado
+    
+    -- Esperar a que el Humanoid y Animate estén listos
+    repeat
+        task.wait()
+    until character:FindFirstChild("Humanoid") and character:FindFirstChild("Animate")
     
     -- Guardar animaciones originales si es la primera vez
     if not next(OriginalAnimations) then
@@ -727,20 +758,19 @@ LocalPlayer.CharacterAdded:Connect(function(character)
     if getgenv().AnimationSettings.AutoApply then
         local selected = getgenv().AnimationSettings.SelectedAnimation
         if selected ~= "" then
+            task.wait(0.5) -- Esperar adicional
             if selected == "Custom" then
-                task.wait(0.5)
                 ApplyAnimations(getgenv().AnimationSettings.CustomAnimations)
             elseif AnimationLibrary[selected] then
-                task.wait(0.5)
                 ApplyAnimations(AnimationLibrary[selected])
             end
         end
     end
 end)
 
--- Inicialización
+-- Inicialización mejorada
 task.spawn(function()
-    task.wait(2)
+    task.wait(3) -- Más tiempo de espera inicial
     
     -- Guardar animaciones originales al iniciar
     SaveOriginalAnimations()
@@ -748,6 +778,7 @@ task.spawn(function()
     -- Aplicar animaciones si hay una seleccionada al iniciar
     local selected = getgenv().AnimationSettings.SelectedAnimation
     if selected ~= "" then
+        task.wait(1)
         if selected == "Custom" then
             ApplyAnimations(getgenv().AnimationSettings.CustomAnimations)
         elseif AnimationLibrary[selected] then
@@ -758,8 +789,7 @@ end)
 
 -- Notificación de carga
 Orion:MakeNotification({
-    Name = "🎭 Sistema de Animaciones Cargado",
+    Name = "Sistema de Animaciones Cargado",
     Content = "Presiona RightControl para abrir/cerrar el menu\n" .. #animationNames .. " packs de animaciones disponibles",
-    Image = "rbxassetid://10723427954",
     Time = 5
 })

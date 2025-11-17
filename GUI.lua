@@ -82,8 +82,13 @@ LocalPlayer.Idled:Connect(function()
     wait(1)
     VirtualInput:Button2Up(Vector2.new(0, 0), Workspace.CurrentCamera.CFrame)
 end)
+
+-- Contadores
+local EmoteCount = 0
+local AnimationCount = 0
+
 -- =============================================================================
--- INTERFAZ GRÁFICA VISIBLE (ScreenGui)
+-- INTERFAZ GRÁFICA VISIBLE (ScreenGui) - EN EL LUGAR CORRECTO
 -- =============================================================================
 
 -- Crear la ScreenGui (PARTE QUE HACE QUE SE VEA)
@@ -118,7 +123,7 @@ local titleCorner = Instance.new("UICorner")
 titleCorner.CornerRadius = UDim.new(0, 8)
 titleCorner.Parent = titleBar
 
--- Texto del título
+-- Texto del título (AHORA SÍ con los contadores correctos)
 local title = Instance.new("TextLabel")
 title.Name = "Title"
 title.Size = UDim2.new(1, -40, 1, 0)
@@ -329,9 +334,6 @@ updateScrollSize()
 listLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateScrollSize)
 
 print("Animation Hub GUI loaded successfully!")
--- Contadores
-local EmoteCount = 0
-local AnimationCount = 0
 
 -- Configuración principal
 getgenv().Settings = {

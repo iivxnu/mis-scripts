@@ -1,354 +1,512 @@
--- Animations GUI Script
--- Creado para Roblox
+-- Animation Hub - Client Side Character Animations
+-- Script para cambiar animaciones base del personaje
 
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
 
--- Esperar a que el juego cargue
+-- Esperar a que todo cargue
 repeat task.wait() until game:IsLoaded() and LocalPlayer.Character
 
--- Configuración principal
+-- Configuración
 local Config = {
-    CurrentAnimation = "",
+    CurrentPackage = "Default",
     AnimationSpeed = 1,
-    GUIEnabled = true
+    GUIKey = Enum.KeyCode.RightShift,
+    Enabled = true
 }
 
--- Biblioteca de animaciones
-local AnimationLibrary = {
-    ["Idle Animations"] = {
-        ["Relajado"] = "http://www.roblox.com/asset/?id=616158929",
-        ["Estilo"] = "http://www.roblox.com/asset/?id=616136790",
-        ["Robot"] = "http://www.roblox.com/asset/?id=616088211",
-        ["Zombie"] = "http://www.roblox.com/asset/?id=616158929"
+-- Biblioteca de paquetes de animaciones
+local AnimationPackages = {
+    ["Default"] = {
+        Idle = "http://www.roblox.com/asset/?id=616158929",
+        Walk = "http://www.roblox.com/asset/?id=616146177",
+        Run = "http://www.roblox.com/asset/?id=616140816",
+        Jump = "http://www.roblox.com/asset/?id=616139451",
+        Fall = "http://www.roblox.com/asset/?id=616134815",
+        Swim = "http://www.roblox.com/asset/?id=616143378",
+        SwimIdle = "http://www.roblox.com/asset/?id=616144772",
+        Climb = "http://www.roblox.com/asset/?id=616133594"
     },
     
-    ["Walk Animations"] = {
-        ["Normal"] = "http://www.roblox.com/asset/?id=616146177",
-        ["Estilo"] = "http://www.roblox.com/asset/?id=616146177",
-        ["Robot"] = "http://www.roblox.com/asset/?id=616095330",
-        ["Zombie"] = "http://www.roblox.com/asset/?id=616168032"
+    ["Stylish"] = {
+        Idle = "http://www.roblox.com/asset/?id=616136790",
+        Idle2 = "http://www.roblox.com/asset/?id=616138447",
+        Walk = "http://www.roblox.com/asset/?id=616146177",
+        Run = "http://www.roblox.com/asset/?id=616140816",
+        Jump = "http://www.roblox.com/asset/?id=616139451",
+        Fall = "http://www.roblox.com/asset/?id=616134815",
+        Swim = "http://www.roblox.com/asset/?id=616143378",
+        SwimIdle = "http://www.roblox.com/asset/?id=616144772",
+        Climb = "http://www.roblox.com/asset/?id=616133594"
     },
     
-    ["Run Animations"] = {
-        ["Normal"] = "http://www.roblox.com/asset/?id=616140816",
-        ["Estilo"] = "http://www.roblox.com/asset/?id=616140816",
-        ["Robot"] = "http://www.roblox.com/asset/?id=616091570",
-        ["Zombie"] = "http://www.roblox.com/asset/?id=616163682"
+    ["Zombie"] = {
+        Idle = "http://www.roblox.com/asset/?id=616158929",
+        Walk = "http://www.roblox.com/asset/?id=616168032",
+        Run = "http://www.roblox.com/asset/?id=616163682",
+        Jump = "http://www.roblox.com/asset/?id=616161997",
+        Fall = "http://www.roblox.com/asset/?id=616157476",
+        Swim = "http://www.roblox.com/asset/?id=616165109",
+        SwimIdle = "http://www.roblox.com/asset/?id=616166655",
+        Climb = "http://www.roblox.com/asset/?id=616156119"
     },
     
-    ["Jump Animations"] = {
-        ["Normal"] = "http://www.roblox.com/asset/?id=616139451",
-        ["Estilo"] = "http://www.roblox.com/asset/?id=616139451",
-        ["Robot"] = "http://www.roblox.com/asset/?id=616090535",
-        ["Zombie"] = "http://www.roblox.com/asset/?id=616161997"
+    ["Robot"] = {
+        Idle = "http://www.roblox.com/asset/?id=616088211",
+        Walk = "http://www.roblox.com/asset/?id=616095330",
+        Run = "http://www.roblox.com/asset/?id=616091570",
+        Jump = "http://www.roblox.com/asset/?id=616090535",
+        Fall = "http://www.roblox.com/asset/?id=616087089",
+        Swim = "http://www.roblox.com/asset/?id=616092998",
+        SwimIdle = "http://www.roblox.com/asset/?id=616094091",
+        Climb = "http://www.roblox.com/asset/?id=616086039"
     },
     
-    ["Emotes"] = {
-        ["Ola"] = "http://www.roblox.com/asset/?id=9527883498",
-        ["Baile 1"] = "http://www.roblox.com/asset/?id=507771019",
-        ["Baile 2"] = "http://www.roblox.com/asset/?id=507776043",
-        ["Baile 3"] = "http://www.roblox.com/asset/?id=507777268",
-        ["Saludo"] = "http://www.roblox.com/asset/?id=507770677",
-        ["Risa"] = "http://www.roblox.com/asset/?id=507770818"
+    ["Vampire"] = {
+        Idle = "http://www.roblox.com/asset/?id=1083445855",
+        Walk = "http://www.roblox.com/asset/?id=1083473930",
+        Run = "http://www.roblox.com/asset/?id=1083462077",
+        Jump = "http://www.roblox.com/asset/?id=1083455352",
+        Fall = "http://www.roblox.com/asset/?id=1083443587",
+        Swim = "http://www.roblox.com/asset/?id=1083464683",
+        SwimIdle = "http://www.roblox.com/asset/?id=1083467779",
+        Climb = "http://www.roblox.com/asset/?id=1083439238"
+    },
+    
+    ["Superhero"] = {
+        Idle = "http://www.roblox.com/asset/?id=616111295",
+        Walk = "http://www.roblox.com/asset/?id=616122287",
+        Run = "http://www.roblox.com/asset/?id=616117076",
+        Jump = "http://www.roblox.com/asset/?id=616115533",
+        Fall = "http://www.roblox.com/asset/?id=616108001",
+        Swim = "http://www.roblox.com/asset/?id=616119360",
+        SwimIdle = "http://www.roblox.com/asset/?id=616120861",
+        Climb = "http://www.roblox.com/asset/?id=616104706"
+    },
+    
+    ["Ninja"] = {
+        Idle = "http://www.roblox.com/asset/?id=656117400",
+        Walk = "http://www.roblox.com/asset/?id=656121766",
+        Run = "http://www.roblox.com/asset/?id=656118852",
+        Jump = "http://www.roblox.com/asset/?id=656117878",
+        Fall = "http://www.roblox.com/asset/?id=656115606",
+        Swim = "http://www.roblox.com/asset/?id=656119721",
+        SwimIdle = "http://www.roblox.com/asset/?id=656121397",
+        Climb = "http://www.roblox.com/asset/?id=656114359"
+    },
+    
+    ["Cartoony"] = {
+        Idle = "http://www.roblox.com/asset/?id=742637544",
+        Walk = "http://www.roblox.com/asset/?id=742640026",
+        Run = "http://www.roblox.com/asset/?id=742638842",
+        Jump = "http://www.roblox.com/asset/?id=742637942",
+        Fall = "http://www.roblox.com/asset/?id=742637151",
+        Swim = "http://www.roblox.com/asset/?id=742639220",
+        SwimIdle = "http://www.roblox.com/asset/?id=742639812",
+        Climb = "http://www.roblox.com/asset/?id=742636889"
+    },
+    
+    ["Bubbly"] = {
+        Idle = "http://www.roblox.com/asset/?id=910004836",
+        Walk = "http://www.roblox.com/asset/?id=910034870",
+        Run = "http://www.roblox.com/asset/?id=910025107",
+        Jump = "http://www.roblox.com/asset/?id=910016857",
+        Fall = "http://www.roblox.com/asset/?id=910001910",
+        Swim = "http://www.roblox.com/asset/?id=910028158",
+        SwimIdle = "http://www.roblox.com/asset/?id=910030921",
+        Climb = "http://www.roblox.com/asset/?id=909997997"
+    },
+    
+    ["Elder"] = {
+        Idle = "http://www.roblox.com/asset/?id=845397899",
+        Walk = "http://www.roblox.com/asset/?id=845403856",
+        Run = "http://www.roblox.com/asset/?id=845386501",
+        Jump = "http://www.roblox.com/asset/?id=845398858",
+        Fall = "http://www.roblox.com/asset/?id=845396048",
+        Swim = "http://www.roblox.com/asset/?id=845401742",
+        SwimIdle = "http://www.roblox.com/asset/?id=845403127",
+        Climb = "http://www.roblox.com/asset/?id=845392038"
     }
 }
 
--- Variables globales
+-- Variables
 local ScreenGui, MainFrame
-local CurrentAnimationTrack
+local OriginalAnimations = {}
 
--- Función para aplicar animación
-local function ApplyAnimation(animationName, animationId)
-    if not LocalPlayer.Character then return end
+-- Función para guardar animaciones originales
+local function SaveOriginalAnimations()
+    local character = LocalPlayer.Character
+    if not character then return end
     
-    local humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-    if not humanoid then return end
+    local animate = character:FindFirstChild("Animate")
+    if not animate then return end
     
-    -- Detener animación actual
-    if CurrentAnimationTrack then
-        CurrentAnimationTrack:Stop()
-        CurrentAnimationTrack = nil
-    end
-    
-    -- Crear y reproducir nueva animación
-    local animation = Instance.new("Animation")
-    animation.AnimationId = animationId
-    
-    CurrentAnimationTrack = humanoid:LoadAnimation(animation)
-    CurrentAnimationTrack:Play()
-    CurrentAnimationTrack:AdjustSpeed(Config.AnimationSpeed)
-    
-    Config.CurrentAnimation = animationName
-    UpdateStatusLabel()
+    OriginalAnimations = {
+        Idle1 = animate.idle.Animation1.AnimationId,
+        Idle2 = animate.idle.Animation2.AnimationId,
+        Walk = animate.walk.WalkAnim.AnimationId,
+        Run = animate.run.RunAnim.AnimationId,
+        Jump = animate.jump.JumpAnim.AnimationId,
+        Fall = animate.fall.FallAnim.AnimationId,
+        Swim = animate.swim.SwimAnim.AnimationId,
+        SwimIdle = animate.swimidle.SwimIdleAnim.AnimationId,
+        Climb = animate.climb.ClimbAnim.AnimationId
+    }
 end
 
--- Función para actualizar la etiqueta de estado
-local function UpdateStatusLabel()
+-- Función para aplicar paquete de animaciones
+local function ApplyAnimationPackage(packageName)
+    local character = LocalPlayer.Character
+    if not character then return end
+    
+    local animate = character:FindFirstChild("Animate")
+    if not animate then return end
+    
+    local package = AnimationPackages[packageName]
+    if not package then return end
+    
+    -- Aplicar animaciones
+    if package.Idle then
+        animate.idle.Animation1.AnimationId = package.Idle
+        if package.Idle2 then
+            animate.idle.Animation2.AnimationId = package.Idle2
+        end
+    end
+    
+    if package.Walk then
+        animate.walk.WalkAnim.AnimationId = package.Walk
+    end
+    
+    if package.Run then
+        animate.run.RunAnim.AnimationId = package.Run
+    end
+    
+    if package.Jump then
+        animate.jump.JumpAnim.AnimationId = package.Jump
+    end
+    
+    if package.Fall then
+        animate.fall.FallAnim.AnimationId = package.Fall
+    end
+    
+    if package.Swim then
+        animate.swim.SwimAnim.AnimationId = package.Swim
+    end
+    
+    if package.SwimIdle then
+        animate.swimidle.SwimIdleAnim.AnimationId = package.SwimIdle
+    end
+    
+    if package.Climb then
+        animate.climb.ClimbAnim.AnimationId = package.Climb
+    end
+    
+    Config.CurrentPackage = packageName
+    UpdateStatus()
+end
+
+-- Función para restaurar animaciones originales
+local function RestoreOriginalAnimations()
+    local character = LocalPlayer.Character
+    if not character then return end
+    
+    local animate = character:FindFirstChild("Animate")
+    if not animate then return end
+    
+    if OriginalAnimations.Idle1 then
+        animate.idle.Animation1.AnimationId = OriginalAnimations.Idle1
+        animate.idle.Animation2.AnimationId = OriginalAnimations.Idle2
+        animate.walk.WalkAnim.AnimationId = OriginalAnimations.Walk
+        animate.run.RunAnim.AnimationId = OriginalAnimations.Run
+        animate.jump.JumpAnim.AnimationId = OriginalAnimations.Jump
+        animate.fall.FallAnim.AnimationId = OriginalAnimations.Fall
+        animate.swim.SwimAnim.AnimationId = OriginalAnimations.Swim
+        animate.swimidle.SwimIdleAnim.AnimationId = OriginalAnimations.SwimIdle
+        animate.climb.ClimbAnim.AnimationId = OriginalAnimations.Climb
+    end
+    
+    Config.CurrentPackage = "Default"
+    UpdateStatus()
+end
+
+-- Función para actualizar estado
+local function UpdateStatus()
     if MainFrame and MainFrame.StatusLabel then
-        MainFrame.StatusLabel.Text = "Animación: " .. (Config.CurrentAnimation or "Ninguna") .. " | Velocidad: " .. Config.AnimationSpeed
+        MainFrame.StatusLabel.Text = "Paquete: " .. Config.CurrentPackage .. " | Velocidad: " .. Config.AnimationSpeed
     end
-end
-
--- Función para crear botones de animación
-local function CreateAnimationButtons(categoryName, animations)
-    local sectionFrame = Instance.new("Frame")
-    sectionFrame.Name = categoryName
-    sectionFrame.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-    sectionFrame.BorderSizePixel = 0
-    sectionFrame.Size = UDim2.new(0.95, 0, 0, 40)
-    sectionFrame.Parent = MainFrame.ScrollingFrame
-    
-    local sectionLabel = Instance.new("TextLabel")
-    sectionLabel.Name = "SectionLabel"
-    sectionLabel.Text = categoryName
-    sectionLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    sectionLabel.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-    sectionLabel.BorderSizePixel = 0
-    sectionLabel.Size = UDim2.new(1, 0, 0, 25)
-    sectionLabel.Font = Enum.Font.GothamBold
-    sectionLabel.TextSize = 14
-    sectionLabel.Parent = sectionFrame
-    
-    local buttonsFrame = Instance.new("Frame")
-    buttonsFrame.Name = "ButtonsFrame"
-    buttonsFrame.BackgroundTransparency = 1
-    buttonsFrame.Size = UDim2.new(1, 0, 0, 15)
-    buttonsFrame.Position = UDim2.new(0, 0, 0, 25)
-    buttonsFrame.Parent = sectionFrame
-    
-    local buttonLayout = Instance.new("UIListLayout")
-    buttonLayout.FillDirection = Enum.FillDirection.Horizontal
-    buttonLayout.Padding = UDim.new(0, 5)
-    buttonLayout.Parent = buttonsFrame
-    
-    -- Crear botones para cada animación
-    for animName, animId in pairs(animations) do
-        local animButton = Instance.new("TextButton")
-        animButton.Name = animName
-        animButton.Text = animName
-        animButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-        animButton.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
-        animButton.BorderSizePixel = 0
-        animButton.Size = UDim2.new(0, 80, 0, 25)
-        animButton.Font = Enum.Font.Gotham
-        animButton.TextSize = 12
-        animButton.Parent = buttonsFrame
-        
-        animButton.MouseButton1Click:Connect(function()
-            ApplyAnimation(animName, animId)
-        end)
-    end
-    
-    -- Ajustar tamaño de la sección basado en los botones
-    sectionFrame.Size = UDim2.new(0.95, 0, 0, 40 + (#animations > 0 and 30 or 0))
 end
 
 -- Función para crear la GUI
 local function CreateGUI()
     -- Crear ScreenGui
     ScreenGui = Instance.new("ScreenGui")
-    ScreenGui.Name = "AnimationsGUI"
+    ScreenGui.Name = "AnimationHub"
+    ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
     
     -- Frame principal
     MainFrame = Instance.new("Frame")
     MainFrame.Name = "MainFrame"
-    MainFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
     MainFrame.BorderSizePixel = 0
-    MainFrame.Size = UDim2.new(0, 350, 0, 400)
-    MainFrame.Position = UDim2.new(0, 10, 0, 10)
+    MainFrame.Size = UDim2.new(0, 400, 0, 500)
+    MainFrame.Position = UDim2.new(0.5, -200, 0.5, -250)
+    MainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
     MainFrame.Parent = ScreenGui
     
     -- Corner
     local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 8)
+    corner.CornerRadius = UDim.new(0, 12)
     corner.Parent = MainFrame
+    
+    -- Sombra
+    local shadow = Instance.new("ImageLabel")
+    shadow.Name = "Shadow"
+    shadow.Image = "rbxassetid://5554236805"
+    shadow.ScaleType = Enum.ScaleType.Slice
+    shadow.SliceCenter = Rect.new(23, 23, 277, 277)
+    shadow.BackgroundTransparency = 1
+    shadow.Size = UDim2.new(1, 30, 1, 30)
+    shadow.Position = UDim2.new(0, -15, 0, -15)
+    shadow.ZIndex = -1
+    shadow.Parent = MainFrame
     
     -- Barra de título
     local titleBar = Instance.new("Frame")
     titleBar.Name = "TitleBar"
-    titleBar.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    titleBar.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
     titleBar.BorderSizePixel = 0
-    titleBar.Size = UDim2.new(1, 0, 0, 30)
+    titleBar.Size = UDim2.new(1, 0, 0, 40)
     titleBar.Parent = MainFrame
     
     local titleCorner = Instance.new("UICorner")
-    titleCorner.CornerRadius = UDim.new(0, 8)
+    titleCorner.CornerRadius = UDim.new(0, 12)
     titleCorner.Parent = titleBar
     
     local titleLabel = Instance.new("TextLabel")
     titleLabel.Name = "TitleLabel"
-    titleLabel.Text = "🎭 Controlador de Animaciones"
+    titleLabel.Text = "🎭 ANIMATION HUB"
     titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
     titleLabel.BackgroundTransparency = 1
     titleLabel.Size = UDim2.new(0.7, 0, 1, 0)
+    titleLabel.Position = UDim2.new(0, 15, 0, 0)
     titleLabel.Font = Enum.Font.GothamBold
-    titleLabel.TextSize = 14
+    titleLabel.TextSize = 16
+    titleLabel.TextXAlignment = Enum.TextXAlignment.Left
     titleLabel.Parent = titleBar
     
     -- Botón de cerrar
     local closeButton = Instance.new("TextButton")
     closeButton.Name = "CloseButton"
-    closeButton.Text = "X"
+    closeButton.Text = "×"
     closeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-    closeButton.BackgroundColor3 = Color3.fromRGB(200, 60, 60)
+    closeButton.BackgroundColor3 = Color3.fromRGB(220, 60, 60)
     closeButton.BorderSizePixel = 0
-    closeButton.Size = UDim2.new(0, 30, 0, 25)
-    closeButton.Position = UDim2.new(1, -35, 0, 2)
+    closeButton.Size = UDim2.new(0, 30, 0, 30)
+    closeButton.Position = UDim2.new(1, -35, 0, 5)
     closeButton.Font = Enum.Font.GothamBold
-    closeButton.TextSize = 12
+    closeButton.TextSize = 18
     closeButton.Parent = titleBar
     
+    local closeCorner = Instance.new("UICorner")
+    closeCorner.CornerRadius = UDim.new(0, 6)
+    closeCorner.Parent = closeButton
+    
     closeButton.MouseButton1Click:Connect(function()
-        ScreenGui.Enabled = not ScreenGui.Enabled
+        ScreenGui.Enabled = false
     end)
     
     -- Frame de desplazamiento
     local scrollingFrame = Instance.new("ScrollingFrame")
     scrollingFrame.Name = "ScrollingFrame"
     scrollingFrame.BackgroundTransparency = 1
-    scrollingFrame.Size = UDim2.new(1, 0, 1, -70)
-    scrollingFrame.Position = UDim2.new(0, 0, 0, 35)
+    scrollingFrame.Size = UDim2.new(1, -20, 1, -120)
+    scrollingFrame.Position = UDim2.new(0, 10, 0, 50)
     scrollingFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
     scrollingFrame.ScrollBarThickness = 5
+    scrollingFrame.ScrollBarImageColor3 = Color3.fromRGB(100, 100, 110)
     scrollingFrame.Parent = MainFrame
     
-    local layout = Instance.new("UIListLayout")
-    layout.Padding = UDim.new(0, 10)
+    local layout = Instance.new("UIGridLayout")
+    layout.CellSize = UDim2.new(0.5, -10, 0, 80)
+    layout.CellPadding = UDim2.new(0, 10, 0, 10)
+    layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
     layout.Parent = scrollingFrame
     
-    -- Crear secciones de animaciones
-    for category, animations in pairs(AnimationLibrary) do
-        CreateAnimationButtons(category, animations)
-    end
-    
-    -- Barra de control de velocidad
-    local speedSection = Instance.new("Frame")
-    speedSection.Name = "SpeedControl"
-    speedSection.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-    speedSection.BorderSizePixel = 0
-    speedSection.Size = UDim2.new(0.95, 0, 0, 60)
-    speedSection.Parent = scrollingFrame
-    
-    local speedLabel = Instance.new("TextLabel")
-    speedLabel.Name = "SpeedLabel"
-    speedLabel.Text = "Velocidad de Animación"
-    speedLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    speedLabel.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-    speedLabel.BorderSizePixel = 0
-    speedLabel.Size = UDim2.new(1, 0, 0, 25)
-    speedLabel.Font = Enum.Font.GothamBold
-    speedLabel.TextSize = 14
-    speedLabel.Parent = speedSection
-    
-    local speedSlider = Instance.new("Frame")
-    speedSlider.Name = "SpeedSlider"
-    speedSlider.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
-    speedSlider.BorderSizePixel = 0
-    speedSlider.Size = UDim2.new(0.9, 0, 0, 20)
-    speedSlider.Position = UDim2.new(0.05, 0, 0, 30)
-    speedSlider.Parent = speedSection
-    
-    local sliderFill = Instance.new("Frame")
-    sliderFill.Name = "SliderFill"
-    sliderFill.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
-    sliderFill.BorderSizePixel = 0
-    sliderFill.Size = UDim2.new(0.5, 0, 1, 0)
-    sliderFill.Parent = speedSlider
-    
-    local sliderButton = Instance.new("TextButton")
-    sliderButton.Name = "SliderButton"
-    sliderButton.Text = ""
-    sliderButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    sliderButton.BorderSizePixel = 0
-    sliderButton.Size = UDim2.new(0, 10, 1, 0)
-    sliderButton.Position = UDim2.new(0.5, -5, 0, 0)
-    sliderButton.Parent = speedSlider
-    
-    -- Función para actualizar velocidad
-    local function UpdateSpeed(value)
-        Config.AnimationSpeed = math.clamp(value, 0.1, 5)
-        if CurrentAnimationTrack then
-            CurrentAnimationTrack:AdjustSpeed(Config.AnimationSpeed)
-        end
-        UpdateStatusLabel()
-    end
-    
-    sliderButton.MouseButton1Down:Connect(function()
-        local connection
-        connection = UserInputService.InputChanged:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseMovement then
-                local sliderAbsolutePosition = speedSlider.AbsolutePosition.X
-                local sliderAbsoluteSize = speedSlider.AbsoluteSize.X
-                local mouseX = input.Position.X
-                
-                local relativeX = math.clamp(mouseX - sliderAbsolutePosition, 0, sliderAbsoluteSize)
-                local percentage = relativeX / sliderAbsoluteSize
-                
-                sliderFill.Size = UDim2.new(percentage, 0, 1, 0)
-                sliderButton.Position = UDim2.new(percentage, -5, 0, 0)
-                
-                UpdateSpeed(percentage * 4.9 + 0.1)
-            end
+    -- Crear botones para cada paquete
+    for packageName, packageData in pairs(AnimationPackages) do
+        local packageButton = Instance.new("TextButton")
+        packageButton.Name = packageName
+        packageButton.Text = packageName
+        packageButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+        packageButton.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
+        packageButton.BorderSizePixel = 0
+        packageButton.Size = UDim2.new(1, 0, 1, 0)
+        packageButton.Font = Enum.Font.GothamBold
+        packageButton.TextSize = 14
+        packageButton.Parent = scrollingFrame
+        
+        local buttonCorner = Instance.new("UICorner")
+        buttonCorner.CornerRadius = UDim.new(0, 8)
+        buttonCorner.Parent = packageButton
+        
+        local buttonStroke = Instance.new("UIStroke")
+        buttonStroke.Color = Color3.fromRGB(80, 80, 90)
+        buttonStroke.Thickness = 2
+        buttonStroke.Parent = packageButton
+        
+        packageButton.MouseEnter:Connect(function()
+            TweenService:Create(packageButton, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(65, 65, 75)}):Play()
         end)
         
-        UserInputService.InputEnded:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                connection:Disconnect()
-            end
+        packageButton.MouseLeave:Connect(function()
+            TweenService:Create(packageButton, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(50, 50, 60)}):Play()
         end)
+        
+        packageButton.MouseButton1Click:Connect(function()
+            ApplyAnimationPackage(packageName)
+        end)
+    end
+    
+    -- Ajustar tamaño del canvas
+    task.spawn(function()
+        task.wait(0.1)
+        local packageCount = 0
+        for _ in pairs(AnimationPackages) do
+            packageCount += 1
+        end
+        local rows = math.ceil(packageCount / 2)
+        scrollingFrame.CanvasSize = UDim2.new(0, 0, 0, rows * 90)
+    end)
+    
+    -- Barra inferior
+    local bottomBar = Instance.new("Frame")
+    bottomBar.Name = "BottomBar"
+    bottomBar.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
+    bottomBar.BorderSizePixel = 0
+    bottomBar.Size = UDim2.new(1, 0, 0, 60)
+    bottomBar.Position = UDim2.new(0, 0, 1, -60)
+    bottomBar.Parent = MainFrame
+    
+    -- Botón restaurar
+    local restoreButton = Instance.new("TextButton")
+    restoreButton.Name = "RestoreButton"
+    restoreButton.Text = "🔄 Restaurar Original"
+    restoreButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    restoreButton.BackgroundColor3 = Color3.fromRGB(70, 130, 200)
+    restoreButton.BorderSizePixel = 0
+    restoreButton.Size = UDim2.new(0, 150, 0, 35)
+    restoreButton.Position = UDim2.new(0, 15, 0, 12)
+    restoreButton.Font = Enum.Font.GothamBold
+    restoreButton.TextSize = 12
+    restoreButton.Parent = bottomBar
+    
+    local restoreCorner = Instance.new("UICorner")
+    restoreCorner.CornerRadius = UDim.new(0, 6)
+    restoreCorner.Parent = restoreButton
+    
+    restoreButton.MouseButton1Click:Connect(function()
+        RestoreOriginalAnimations()
     end)
     
     -- Etiqueta de estado
     local statusLabel = Instance.new("TextLabel")
     statusLabel.Name = "StatusLabel"
-    statusLabel.Text = "Animación: Ninguna | Velocidad: 1"
-    statusLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    statusLabel.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-    statusLabel.BorderSizePixel = 0
-    statusLabel.Size = UDim2.new(1, 0, 0, 30)
-    statusLabel.Position = UDim2.new(0, 0, 1, -30)
+    statusLabel.Text = "Paquete: " .. Config.CurrentPackage .. " | Velocidad: " .. Config.AnimationSpeed
+    statusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+    statusLabel.BackgroundTransparency = 1
+    statusLabel.Size = UDim2.new(1, -20, 0, 20)
+    statusLabel.Position = UDim2.new(0, 10, 1, -25)
     statusLabel.Font = Enum.Font.Gotham
     statusLabel.TextSize = 12
+    statusLabel.TextXAlignment = Enum.TextXAlignment.Left
     statusLabel.Parent = MainFrame
     
     MainFrame.StatusLabel = statusLabel
     
-    -- Botón para detener animación
-    local stopButton = Instance.new("TextButton")
-    stopButton.Name = "StopButton"
-    stopButton.Text = "⏹️ Detener Animación"
-    stopButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-    stopButton.BackgroundColor3 = Color3.fromRGB(200, 60, 60)
-    stopButton.BorderSizePixel = 0
-    stopButton.Size = UDim2.new(0.9, 0, 0, 30)
-    stopButton.Position = UDim2.new(0.05, 0, 1, -70)
-    stopButton.Font = Enum.Font.GothamBold
-    stopButton.TextSize = 12
-    stopButton.Parent = MainFrame
+    -- Control de velocidad
+    local speedFrame = Instance.new("Frame")
+    speedFrame.Name = "SpeedFrame"
+    speedFrame.BackgroundTransparency = 1
+    speedFrame.Size = UDim2.new(0, 180, 0, 35)
+    speedFrame.Position = UDim2.new(1, -195, 0, 12)
+    speedFrame.Parent = bottomBar
     
-    stopButton.MouseButton1Click:Connect(function()
-        if CurrentAnimationTrack then
-            CurrentAnimationTrack:Stop()
-            CurrentAnimationTrack = nil
-            Config.CurrentAnimation = ""
-            UpdateStatusLabel()
+    local speedLabel = Instance.new("TextLabel")
+    speedLabel.Name = "SpeedLabel"
+    speedLabel.Text = "Velocidad:"
+    speedLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+    speedLabel.BackgroundTransparency = 1
+    speedLabel.Size = UDim2.new(0, 60, 1, 0)
+    speedLabel.Font = Enum.Font.Gotham
+    speedLabel.TextSize = 12
+    speedLabel.TextXAlignment = Enum.TextXAlignment.Left
+    speedLabel.Parent = speedFrame
+    
+    local speedBox = Instance.new("TextBox")
+    speedBox.Name = "SpeedBox"
+    speedBox.Text = tostring(Config.AnimationSpeed)
+    speedBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+    speedBox.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
+    speedFrame.BorderSizePixel = 0
+    speedBox.Size = UDim2.new(0, 50, 1, 0)
+    speedBox.Position = UDim2.new(0, 65, 0, 0)
+    speedBox.Font = Enum.Font.Gotham
+    speedBox.TextSize = 12
+    speedBox.Parent = speedFrame
+    
+    local speedCorner = Instance.new("UICorner")
+    speedCorner.CornerRadius = UDim.new(0, 4)
+    speedCorner.Parent = speedBox
+    
+    speedBox.FocusLost:Connect(function(enterPressed)
+        if enterPressed then
+            local newSpeed = tonumber(speedBox.Text)
+            if newSpeed and newSpeed >= 0.1 and newSpeed <= 5 then
+                Config.AnimationSpeed = newSpeed
+                UpdateStatus()
+            else
+                speedBox.Text = tostring(Config.AnimationSpeed)
+            end
         end
     end)
     
-    -- Ajustar tamaño del canvas
-    task.spawn(function()
-        task.wait(0.1)
-        local totalHeight = 0
-        for _, child in pairs(scrollingFrame:GetChildren()) do
-            if child:IsA("Frame") and child ~= layout then
-                totalHeight += child.Size.Y.Offset + 10
-            end
+    -- Hacer la ventana arrastrable
+    local dragging = false
+    local dragInput, dragStart, startPos
+    
+    local function update(input)
+        local delta = input.Position - dragStart
+        MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+    
+    titleBar.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            dragStart = input.Position
+            startPos = MainFrame.Position
+            
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
         end
-        scrollingFrame.CanvasSize = UDim2.new(0, 0, 0, totalHeight)
+    end)
+    
+    titleBar.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement then
+            dragInput = input
+        end
+    end)
+    
+    UserInputService.InputChanged:Connect(function(input)
+        if input == dragInput and dragging then
+            update(input)
+        end
     end)
 end
 
@@ -356,43 +514,67 @@ end
 local function Initialize()
     CreateGUI()
     
-    -- Tecla de toggle (F2)
+    -- Guardar animaciones originales
+    SaveOriginalAnimations()
+    
+    -- Tecla de toggle (RightShift)
     UserInputService.InputBegan:Connect(function(input, gameProcessed)
         if gameProcessed then return end
         
-        if input.KeyCode == Enum.KeyCode.F2 then
+        if input.KeyCode == Config.GUIKey then
             ScreenGui.Enabled = not ScreenGui.Enabled
         end
     end)
     
-    print("✅ GUI de Animaciones cargada correctamente")
-    print("📝 Presiona F2 para mostrar/ocultar la interfaz")
+    print("🎭 Animation Hub cargado correctamente")
+    print("🎮 Presiona RightShift para mostrar/ocultar")
+    print("📦 Paquetes disponibles: " .. tostring(#AnimationPackages))
+end
+
+-- Manejar cambios de personaje
+local function SetupCharacter(character)
+    task.wait(1) -- Esperar a que el personaje esté completamente cargado
+    
+    local humanoid = character:WaitForChild("Humanoid")
+    local animate = character:WaitForChild("Animate")
+    
+    -- Guardar animaciones originales si es la primera vez
+    if not next(OriginalAnimations) then
+        SaveOriginalAnimations()
+    end
+    
+    -- Re-aplicar el paquete actual si no es el default
+    if Config.CurrentPackage ~= "Default" then
+        ApplyAnimationPackage(Config.CurrentPackage)
+    end
+    
+    humanoid.Died:Connect(function()
+        task.wait(3) -- Esperar respawn
+        if LocalPlayer.Character then
+            SetupCharacter(LocalPlayer.Character)
+        end
+    end)
 end
 
 -- Inicializar cuando el personaje esté listo
 if LocalPlayer.Character then
+    SetupCharacter(LocalPlayer.Character)
     Initialize()
 else
-    LocalPlayer.CharacterAdded:Connect(function()
-        task.wait(1)
-        Initialize()
+    LocalPlayer.CharacterAdded:Connect(function(character)
+        SetupCharacter(character)
+        if not ScreenGui then
+            Initialize()
+        end
     end)
 end
 
--- Reconectar si el personaje muere
-LocalPlayer.CharacterAdded:Connect(function(character)
-    character:WaitForChild("Humanoid").Died:Connect(function()
-        if CurrentAnimationTrack then
-            CurrentAnimationTrack:Stop()
-            CurrentAnimationTrack = nil
-            Config.CurrentAnimation = ""
-            UpdateStatusLabel()
-        end
-    end)
-end)
+-- Reconectar siempre que el personaje cambie
+LocalPlayer.CharacterAdded:Connect(SetupCharacter)
 
 return {
     Config = Config,
-    AnimationLibrary = AnimationLibrary,
-    ApplyAnimation = ApplyAnimation
+    AnimationPackages = AnimationPackages,
+    ApplyAnimationPackage = ApplyAnimationPackage,
+    RestoreOriginalAnimations = RestoreOriginalAnimations
 }

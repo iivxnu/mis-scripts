@@ -1,20 +1,12 @@
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
 
 -- Esperar a que el juego cargue
 repeat 
     task.wait() 
 until game:IsLoaded() and LocalPlayer
-
--- Cargar una librería UI más confiable
-local success, Orion = pcall(function()
-    return loadstring(game:HttpGet("https://raw.githubusercontent.com/shlexware/Orion/main/source"))()
-end)
-
-if not success then
-    -- Fallback a otra librería si Orion no carga
-    Orion = loadstring(game:HttpGet("https://raw.githubusercontent.com/flkitt/venyx/main/UI-Library-V2.1"))()
-end
 
 -- Configuración inicial
 getgenv().AnimationSettings = {
@@ -98,6 +90,153 @@ local AnimationLibrary = {
     }
 }
 
+-- Crear la interfaz UI manualmente
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "AnimationsChangerUI"
+screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+screenGui.Parent = game:GetService("CoreGui")
+
+-- Frame principal
+local mainFrame = Instance.new("Frame")
+mainFrame.Name = "MainFrame"
+mainFrame.Size = UDim2.new(0, 400, 0, 500)
+mainFrame.Position = UDim2.new(0.5, -200, 0.5, -250)
+mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+mainFrame.BorderSizePixel = 0
+mainFrame.ClipsDescendants = true
+mainFrame.Parent = screenGui
+
+-- Corner radius
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 8)
+corner.Parent = mainFrame
+
+-- Shadow effect
+local shadow = Instance.new("ImageLabel")
+shadow.Name = "Shadow"
+shadow.Size = UDim2.new(1, 10, 1, 10)
+shadow.Position = UDim2.new(0, -5, 0, -5)
+shadow.BackgroundTransparency = 1
+shadow.Image = "rbxassetid://1316045217"
+shadow.ImageColor3 = Color3.fromRGB(0, 0, 0)
+shadow.ImageTransparency = 0.8
+shadow.ScaleType = Enum.ScaleType.Slice
+shadow.SliceCenter = Rect.new(10, 10, 118, 118)
+shadow.Parent = mainFrame
+shadow.ZIndex = -1
+
+-- Header
+local header = Instance.new("Frame")
+header.Name = "Header"
+header.Size = UDim2.new(1, 0, 0, 40)
+header.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
+header.BorderSizePixel = 0
+header.Parent = mainFrame
+
+local headerCorner = Instance.new("UICorner")
+headerCorner.CornerRadius = UDim.new(0, 8)
+headerCorner.Parent = header
+
+local title = Instance.new("TextLabel")
+title.Name = "Title"
+title.Size = UDim2.new(1, -40, 1, 0)
+title.Position = UDim2.new(0, 10, 0, 0)
+title.BackgroundTransparency = 1
+title.Text = "Animations Changer"
+title.TextColor3 = Color3.fromRGB(255, 255, 255)
+title.TextSize = 18
+title.Font = Enum.Font.GothamBold
+title.TextXAlignment = Enum.TextXAlignment.Left
+title.Parent = header
+
+-- Close button
+local closeButton = Instance.new("TextButton")
+closeButton.Name = "CloseButton"
+closeButton.Size = UDim2.new(0, 30, 0, 30)
+closeButton.Position = UDim2.new(1, -35, 0, 5)
+closeButton.BackgroundColor3 = Color3.fromRGB(255, 60, 60)
+closeButton.BorderSizePixel = 0
+closeButton.Text = "X"
+closeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+closeButton.TextSize = 14
+closeButton.Font = Enum.Font.GothamBold
+closeButton.Parent = header
+
+local closeCorner = Instance.new("UICorner")
+closeCorner.CornerRadius = UDim.new(0, 4)
+closeCorner.Parent = closeButton
+
+-- Tabs container
+local tabsContainer = Instance.new("Frame")
+tabsContainer.Name = "TabsContainer"
+tabsContainer.Size = UDim2.new(1, 0, 0, 40)
+tabsContainer.Position = UDim2.new(0, 0, 0, 40)
+tabsContainer.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+tabsContainer.BorderSizePixel = 0
+tabsContainer.Parent = mainFrame
+
+-- Content frame
+local contentFrame = Instance.new("Frame")
+contentFrame.Name = "ContentFrame"
+contentFrame.Size = UDim2.new(1, -20, 1, -100)
+contentFrame.Position = UDim2.new(0, 10, 0, 90)
+contentFrame.BackgroundTransparency = 1
+contentFrame.Parent = mainFrame
+
+-- Scrolling frame para el contenido
+local scrollFrame = Instance.new("ScrollingFrame")
+scrollFrame.Name = "ScrollFrame"
+scrollFrame.Size = UDim2.new(1, 0, 1, 0)
+scrollFrame.BackgroundTransparency = 1
+scrollFrame.BorderSizePixel = 0
+scrollFrame.ScrollBarThickness = 6
+scrollFrame.ScrollBarImageColor3 = Color3.fromRGB(100, 100, 120)
+scrollFrame.Parent = contentFrame
+
+local uiListLayout = Instance.new("UIListLayout")
+uiListLayout.Padding = UDim.new(0, 10)
+uiListLayout.Parent = scrollFrame
+
+-- Variables para controlar la UI
+local currentTab = "Animaciones"
+local tabs = {}
+local tabButtons = {}
+
+-- Función para crear un botón de tab
+local function createTabButton(tabName)
+    local tabButton = Instance.new("TextButton")
+    tabButton.Name = tabName .. "Tab"
+    tabButton.Size = UDim2.new(0.25, 0, 1, 0)
+    tabButton.Position = UDim2.new((#tabButtons * 0.25), 0, 0, 0)
+    tabButton.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
+    tabButton.BorderSizePixel = 0
+    tabButton.Text = tabName
+    tabButton.TextColor3 = Color3.fromRGB(200, 200, 200)
+    tabButton.TextSize = 12
+    tabButton.Font = Enum.Font.Gotham
+    tabButton.Parent = tabsContainer
+    
+    local tabCorner = Instance.new("UICorner")
+    tabCorner.CornerRadius = UDim.new(0, 4)
+    tabCorner.Parent = tabButton
+    
+    table.insert(tabButtons, tabButton)
+    return tabButton
+end
+
+-- Crear tabs
+local tabNames = {"Animaciones", "Individual", "Personalizado", "Config"}
+for i, tabName in ipairs(tabNames) do
+    local tabButton = createTabButton(tabName)
+    tabs[tabName] = {Button = tabButton, Content = {}}
+    
+    tabButton.MouseButton1Click:Connect(function()
+        -- Actualizar tab activo
+        currentTab = tabName
+        updateTabContent()
+    end)
+end
+
 -- Función para esperar a que el personaje esté listo
 local function waitForCharacter()
     if not LocalPlayer.Character then
@@ -110,21 +249,14 @@ end
 -- Función para aplicar animaciones
 local function ApplyAnimations(animationData)
     local character = waitForCharacter()
-    if not character then 
-        warn("No se pudo encontrar el character")
-        return 
-    end
+    if not character then return end
     
     local humanoid = character:FindFirstChildOfClass("Humanoid")
-    if not humanoid then 
-        warn("No se pudo encontrar el humanoid")
-        return 
-    end
+    if not humanoid then return end
     
     -- Esperar a que el script Animate exista
     local animateScript = character:WaitForChild("Animate", 5)
     if not animateScript then
-        warn("No se encontró el script Animate")
         return
     end
     
@@ -181,6 +313,215 @@ local function ApplyAnimations(animationData)
     end
 end
 
+-- Función para crear un botón en la UI
+local function createButton(text, callback)
+    local button = Instance.new("TextButton")
+    button.Size = UDim2.new(1, 0, 0, 35)
+    button.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
+    button.BorderSizePixel = 0
+    button.Text = text
+    button.TextColor3 = Color3.fromRGB(255, 255, 255)
+    button.TextSize = 14
+    button.Font = Enum.Font.Gotham
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 4)
+    corner.Parent = button
+    
+    button.MouseButton1Click:Connect(callback)
+    
+    return button
+end
+
+-- Función para crear un dropdown
+local function createDropdown(text, options, callback)
+    local container = Instance.new("Frame")
+    container.Size = UDim2.new(1, 0, 0, 60)
+    container.BackgroundTransparency = 1
+    
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, 0, 0, 20)
+    label.BackgroundTransparency = 1
+    label.Text = text
+    label.TextColor3 = Color3.fromRGB(255, 255, 255)
+    label.TextSize = 12
+    label.Font = Enum.Font.Gotham
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Parent = container
+    
+    local dropdown = Instance.new("TextButton")
+    dropdown.Size = UDim2.new(1, 0, 0, 35)
+    dropdown.Position = UDim2.new(0, 0, 0, 25)
+    dropdown.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
+    dropdown.BorderSizePixel = 0
+    dropdown.Text = "Seleccionar..."
+    dropdown.TextColor3 = Color3.fromRGB(255, 255, 255)
+    dropdown.TextSize = 12
+    dropdown.Font = Enum.Font.Gotham
+    dropdown.Parent = container
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 4)
+    corner.Parent = dropdown
+    
+    dropdown.MouseButton1Click:Connect(function()
+        -- Aquí podrías implementar un dropdown real, pero por simplicidad usaremos el primero
+        if options and #options > 0 then
+            local selected = options[1]
+            dropdown.Text = selected
+            if callback then
+                callback(selected)
+            end
+        end
+    end)
+    
+    return container
+end
+
+-- Función para crear una sección
+local function createSection(titleText)
+    local section = Instance.new("Frame")
+    section.Size = UDim2.new(1, 0, 0, 40)
+    section.BackgroundTransparency = 1
+    
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, 0, 1, 0)
+    label.BackgroundTransparency = 1
+    label.Text = titleText
+    label.TextColor3 = Color3.fromRGB(255, 255, 255)
+    label.TextSize = 14
+    label.Font = Enum.Font.GothamBold
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Parent = section
+    
+    return section
+end
+
+-- Función para actualizar el contenido del tab
+local function updateTabContent()
+    -- Limpiar contenido anterior
+    for _, child in ipairs(scrollFrame:GetChildren()) do
+        if child:IsA("Frame") then
+            child:Destroy()
+        end
+    end
+    
+    if currentTab == "Animaciones" then
+        -- Contenido del tab Animaciones
+        local section1 = createSection("Paquetes de Animaciones Completas")
+        section1.Parent = scrollFrame
+        
+        local packageOptions = {}
+        for packageName, _ in pairs(AnimationLibrary) do
+            table.insert(packageOptions, packageName)
+        end
+        
+        local dropdown = createDropdown("Seleccionar Paquete Completo", packageOptions, function(selected)
+            if selected and AnimationLibrary[selected] then
+                getgenv().AnimationSettings.SelectedAnimation = selected
+                ApplyAnimations(AnimationLibrary[selected])
+            end
+        end)
+        dropdown.Parent = scrollFrame
+        
+        local applyButton = createButton("Aplicar Paquete Seleccionado", function()
+            local selected = getgenv().AnimationSettings.SelectedAnimation
+            if selected ~= "" and AnimationLibrary[selected] then
+                ApplyAnimations(AnimationLibrary[selected])
+            end
+        end)
+        applyButton.Parent = scrollFrame
+        
+        local section2 = createSection("Controles Generales")
+        section2.Parent = scrollFrame
+        
+        local resetButton = createButton("Resetear a Animaciones Normales", function()
+            getgenv().AnimationSettings.SelectedAnimation = ""
+            local defaultAnimations = {
+                Idle = 180435571,
+                Walk = 180426354,
+                Run = 180426354,
+                Jump = 125750702,
+                Fall = 180436148
+            }
+            ApplyAnimations(defaultAnimations)
+        end)
+        resetButton.Parent = scrollFrame
+        
+    elseif currentTab == "Individual" then
+        -- Contenido del tab Individual
+        local animationTypes = {
+            {"IDLE (Reposo)", "Idle"},
+            {"WALK (Caminar)", "Walk"}, 
+            {"RUN (Correr)", "Run"},
+            {"JUMP (Saltar)", "Jump"},
+            {"FALL (Caer)", "Fall"}
+        }
+        
+        for _, animData in ipairs(animationTypes) do
+            local section = createSection(animData[1])
+            section.Parent = scrollFrame
+            
+            local packageOptions = {}
+            for packageName, _ in pairs(AnimationLibrary) do
+                table.insert(packageOptions, packageName)
+            end
+            
+            local dropdown = createDropdown("Seleccionar " .. animData[2], packageOptions, function(selected)
+                if selected and AnimationLibrary[selected] and AnimationLibrary[selected][animData[2]] then
+                    ApplySingleAnimation(animData[2]:lower(), AnimationLibrary[selected][animData[2]])
+                end
+            end)
+            dropdown.Parent = scrollFrame
+        end
+        
+    elseif currentTab == "Personalizado" then
+        -- Contenido del tab Personalizado
+        local section = createSection("Animaciones Personalizadas")
+        section.Parent = scrollFrame
+        
+        local applyCustomButton = createButton("Aplicar Animaciones Personalizadas", function()
+            ApplyAnimations(getgenv().AnimationSettings.CustomAnimations)
+        end)
+        applyCustomButton.Parent = scrollFrame
+        
+    elseif currentTab == "Config" then
+        -- Contenido del tab Configuración
+        local section = createSection("Configuración")
+        section.Parent = scrollFrame
+        
+        local speedInfo = Instance.new("TextLabel")
+        speedInfo.Size = UDim2.new(1, 0, 0, 30)
+        speedInfo.BackgroundTransparency = 1
+        speedInfo.Text = "Velocidad: " .. getgenv().AnimationSettings.AnimationSpeed
+        speedInfo.TextColor3 = Color3.fromRGB(255, 255, 255)
+        speedInfo.TextSize = 12
+        speedInfo.Font = Enum.Font.Gotham
+        speedInfo.TextXAlignment = Enum.TextXAlignment.Left
+        speedInfo.Parent = scrollFrame
+        
+        local speedButton = createButton("Aumentar Velocidad", function()
+            getgenv().AnimationSettings.AnimationSpeed = math.min(5, getgenv().AnimationSettings.AnimationSpeed + 0.5)
+            speedInfo.Text = "Velocidad: " .. getgenv().AnimationSettings.AnimationSpeed
+            
+            local character = LocalPlayer.Character
+            if character then
+                local humanoid = character:FindFirstChildOfClass("Humanoid")
+                if humanoid then
+                    for _, track in pairs(humanoid:GetPlayingAnimationTracks()) do
+                        track:AdjustSpeed(getgenv().AnimationSettings.AnimationSpeed)
+                    end
+                end
+            end
+        end)
+        speedButton.Parent = scrollFrame
+    end
+    
+    -- Actualizar el tamaño del canvas
+    task.wait()
+    scrollFrame.CanvasSize = UDim2.new(0, 0, 0, uiListLayout.AbsoluteContentSize.Y)
+end
+
 -- Función para aplicar animación individual
 local function ApplySingleAnimation(animationType, animationId)
     if not animationId or animationId == "" then return end
@@ -202,322 +543,36 @@ local function ApplySingleAnimation(animationType, animationId)
     end
 end
 
--- Crear la interfaz
-local Window = Orion:MakeWindow({
-    Name = "Animations Changer",
-    HidePremium = false,
-    SaveConfig = false,
-    ConfigFolder = "AnimationsConfig",
-    IntroEnabled = false  -- Deshabilitar intro para evitar problemas
-})
+-- Configurar el botón de cerrar
+closeButton.MouseButton1Click:Connect(function()
+    screenGui.Enabled = false
+end)
 
--- Tabs principales
-local MainTab = Window:MakeTab({
-    Name = "Animaciones",
-    Icon = "rbxassetid://10723427954",
-    PremiumOnly = false
-})
-
-local IndividualTab = Window:MakeTab({
-    Name = "Animaciones Individuales",
-    Icon = "rbxassetid://10723428312",
-    PremiumOnly = false
-})
-
-local CustomTab = Window:MakeTab({
-    Name = "Personalizado",
-    Icon = "rbxassetid://10723428664",
-    PremiumOnly = false
-})
-
-local SettingsTab = Window:MakeTab({
-    Name = "Configuración",
-    Icon = "rbxassetid://10723428664",
-    PremiumOnly = false
-})
-
--- Sección de animaciones predefinidas
-MainTab:AddSection({
-    Name = "Paquetes de Animaciones Completas"
-})
-
-local packageOptions = {}
-for packageName, _ in pairs(AnimationLibrary) do
-    table.insert(packageOptions, packageName)
+-- Función para toggle UI
+local function toggleUI()
+    screenGui.Enabled = not screenGui.Enabled
 end
 
-local AnimationDropdown = MainTab:AddDropdown({
-    Name = "Seleccionar Paquete Completo",
-    Default = "",
-    Options = packageOptions,
-    Callback = function(selected)
-        if selected ~= "" and AnimationLibrary[selected] then
-            getgenv().AnimationSettings.SelectedAnimation = selected
-            ApplyAnimations(AnimationLibrary[selected])
-            Orion:MakeNotification({
-                Name = "Paquete Aplicado",
-                Content = "Paquete " .. selected .. " aplicado completamente",
-                Image = "rbxassetid://10723427954",
-                Time = 3
-            })
-        end
-    end
-})
-
-MainTab:AddButton({
-    Name = "Aplicar Paquete Seleccionado",
-    Callback = function()
-        local selected = getgenv().AnimationSettings.SelectedAnimation
-        if selected ~= "" and AnimationLibrary[selected] then
-            ApplyAnimations(AnimationLibrary[selected])
-        else
-            Orion:MakeNotification({
-                Name = "Error",
-                Content = "Selecciona un paquete primero",
-                Image = "rbxassetid://10723427954",
-                Time = 3
-            })
-        end
-    end
-})
-
--- Animaciones individuales
-local function createIndividualSection(tab, sectionName, animationType, displayName)
-    tab:AddSection({
-        Name = sectionName
-    })
+-- Bind para toggle UI
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
     
-    tab:AddDropdown({
-        Name = "Seleccionar Animación " .. displayName,
-        Default = "",
-        Options = packageOptions,
-        Callback = function(selected)
-            if selected ~= "" and AnimationLibrary[selected] and AnimationLibrary[selected][animationType] then
-                ApplySingleAnimation(animationType:lower(), AnimationLibrary[selected][animationType])
-                Orion:MakeNotification({
-                    Name = displayName .. " Aplicado",
-                    Content = displayName .. " " .. selected .. " aplicado",
-                    Image = "rbxassetid://10723427954",
-                    Time = 2
-                })
-            end
-        end
-    })
-end
-
--- Crear secciones individuales
-createIndividualSection(IndividualTab, "🎭 Animación IDLE (Reposo)", "Idle", "IDLE")
-createIndividualSection(IndividualTab, "🚶 Animación WALK (Caminar)", "Walk", "WALK")
-createIndividualSection(IndividualTab, "🏃 Animación RUN (Correr)", "Run", "RUN")
-createIndividualSection(IndividualTab, "🦘 Animación JUMP (Saltar)", "Jump", "JUMP")
-createIndividualSection(IndividualTab, "📉 Animación FALL (Caer)", "Fall", "FALL")
-
--- Botón para aplicar todas las animaciones individuales de un paquete
-IndividualTab:AddSection({
-    Name = "Aplicación Rápida"
-})
-
-IndividualTab:AddDropdown({
-    Name = "Aplicar Todas las Animaciones de:",
-    Default = "",
-    Options = packageOptions,
-    Callback = function(selected)
-        if selected ~= "" and AnimationLibrary[selected] then
-            ApplyAnimations(AnimationLibrary[selected])
-            Orion:MakeNotification({
-                Name = "Todas Aplicadas",
-                Content = "Todas las animaciones de " .. selected .. " aplicadas",
-                Image = "rbxassetid://10723427954",
-                Time = 3
-            })
-        end
-    end
-})
-
--- Sección de animaciones personalizadas
-CustomTab:AddSection({
-    Name = "Animaciones Personalizadas"
-})
-
-local customIds = {}
-local animationTypes = {"Idle", "Walk", "Run", "Jump", "Fall"}
-
-for _, animType in pairs(animationTypes) do
-    CustomTab:AddTextbox({
-        Name = "ID Animación " .. animType,
-        Default = "",
-        TextDisappear = true,
-        Callback = function(value)
-            customIds[animType] = value
-        end
-    })
-end
-
-CustomTab:AddButton({
-    Name = "Aplicar Animaciones Personalizadas",
-    Callback = function()
-        ApplyAnimations(customIds)
-        Orion:MakeNotification({
-            Name = "Animaciones Aplicadas",
-            Content = "Animaciones personalizadas aplicadas",
-            Image = "rbxassetid://10723427954",
-            Time = 3
-        })
-    end
-})
-
--- Aplicación individual
-CustomTab:AddSection({
-    Name = "Aplicar Animación Individual"
-})
-
-local currentAnimationID = ""
-local currentAnimationType = "idle"
-
-CustomTab:AddTextbox({
-    Name = "ID de Animación",
-    Default = "",
-    TextDisappear = true,
-    Callback = function(value)
-        currentAnimationID = value
-    end
-})
-
-CustomTab:AddDropdown({
-    Name = "Tipo de Animación",
-    Default = "idle",
-    Options = {"idle", "walk", "run", "jump", "fall"},
-    Callback = function(selected)
-        currentAnimationType = selected
-    end
-})
-
-CustomTab:AddButton({
-    Name = "Aplicar Animación Individual",
-    Callback = function()
-        if currentAnimationID and currentAnimationID ~= "" then
-            ApplySingleAnimation(currentAnimationType, currentAnimationID)
-            Orion:MakeNotification({
-                Name = "Animación Aplicada",
-                Content = "Animación " .. currentAnimationType .. " aplicada",
-                Image = "rbxassetid://10723427954",
-                Time = 3
-            })
-        else
-            Orion:MakeNotification({
-                Name = "Error",
-                Content = "Ingresa un ID de animación válido",
-                Image = "rbxassetid://10723427954",
-                Time = 3
-            })
-        end
-    end
-})
-
--- Botones de control general
-MainTab:AddSection({
-    Name = "Controles Generales"
-})
-
-MainTab:AddButton({
-    Name = "Resetear a Animaciones Normales",
-    Callback = function()
-        getgenv().AnimationSettings.SelectedAnimation = ""
-        -- Crear datos de animaciones por defecto (normales)
-        local defaultAnimations = {
-            Idle = 180435571,
-            Walk = 180426354,
-            Run = 180426354,
-            Jump = 125750702,
-            Fall = 180436148
-        }
-        ApplyAnimations(defaultAnimations)
-        Orion:MakeNotification({
-            Name = "Animaciones Reseteadas",
-            Content = "Animaciones restauradas a las normales",
-            Image = "rbxassetid://10723427954",
-            Time = 3
-        })
-    end
-})
-
--- Sección de velocidad
-MainTab:AddSection({
-    Name = "Configuración de Velocidad"
-})
-
-MainTab:AddSlider({
-    Name = "Velocidad de Animación",
-    Min = 0.1,
-    Max = 5,
-    Default = 1,
-    Color = Color3.fromRGB(255, 255, 255),
-    Increment = 0.1,
-    ValueName = "velocidad",
-    Callback = function(value)
-        getgenv().AnimationSettings.AnimationSpeed = value
-        local character = LocalPlayer.Character
-        if character then
-            local humanoid = character:FindFirstChildOfClass("Humanoid")
-            if humanoid then
-                for _, track in pairs(humanoid:GetPlayingAnimationTracks()) do
-                    track:AdjustSpeed(value)
-                end
-            end
-        end
-    end
-})
-
--- Configuración
-SettingsTab:AddSection({
-    Name = "Opciones Generales"
-})
-
-SettingsTab:AddToggle({
-    Name = "Auto Aplicar al Respawn",
-    Default = false,
-    Callback = function(value)
-        getgenv().AutoApply = value
-    end
-})
-
-SettingsTab:AddBind({
-    Name = "Toggle UI",
-    Default = Enum.KeyCode.RightControl,
-    Hold = false,
-    Callback = function()
-        Orion:ToggleUI()
-    end
-})
-
--- Función para manejar el respawn del personaje
-LocalPlayer.CharacterAdded:Connect(function(character)
-    task.wait(1)
-    
-    if getgenv().AutoApply then
-        local selected = getgenv().AnimationSettings.SelectedAnimation
-        if selected ~= "" and AnimationLibrary[selected] then
-            task.wait(0.5)
-            ApplyAnimations(AnimationLibrary[selected])
-        end
+    if input.KeyCode == Enum.KeyCode.RightControl then
+        toggleUI()
     end
 end)
 
--- Notificación de carga
-Orion:MakeNotification({
-    Name = "Sistema de Animaciones Cargado",
-    Content = "Presiona RightControl para abrir/cerrar el menu",
-    Image = "rbxassetid://10723427954",
-    Time = 5
-})
+-- Inicializar la UI
+updateTabContent()
+
+-- Notificación en consola
+print("Animations Changer cargado! Presiona RightControl para abrir/cerrar el menu")
 
 -- Aplicar animaciones si hay una seleccionada al iniciar
 task.spawn(function()
-    task.wait(3) -- Esperar un poco más para asegurar que todo esté cargado
+    task.wait(3)
     local selected = getgenv().AnimationSettings.SelectedAnimation
     if selected ~= "" and AnimationLibrary[selected] then
         ApplyAnimations(AnimationLibrary[selected])
     end
 end)
-
-print("Animations Changer cargado correctamente!")

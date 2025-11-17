@@ -1,13 +1,20 @@
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 
--- Esperar a que el juego cargue y el personaje esté listo
+-- Esperar a que el juego cargue
 repeat 
     task.wait() 
-until game:IsLoaded() and LocalPlayer and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid")
+until game:IsLoaded() and LocalPlayer
 
--- Cargar tu UI Library
-local Orion = loadstring(game:HttpGet("https://raw.githubusercontent.com/iivxnu/mis-scripts/refs/heads/main/UILibrary.lua"))()
+-- Cargar una librería UI más confiable
+local success, Orion = pcall(function()
+    return loadstring(game:HttpGet("https://raw.githubusercontent.com/shlexware/Orion/main/source"))()
+end)
+
+if not success then
+    -- Fallback a otra librería si Orion no carga
+    Orion = loadstring(game:HttpGet("https://raw.githubusercontent.com/flkitt/venyx/main/UI-Library-V2.1"))()
+end
 
 -- Configuración inicial
 getgenv().AnimationSettings = {
@@ -91,62 +98,94 @@ local AnimationLibrary = {
     }
 }
 
+-- Función para esperar a que el personaje esté listo
+local function waitForCharacter()
+    if not LocalPlayer.Character then
+        LocalPlayer.CharacterAdded:Wait()
+    end
+    repeat task.wait() until LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+    return LocalPlayer.Character
+end
+
 -- Función para aplicar animaciones
 local function ApplyAnimations(animationData)
-    local character = LocalPlayer.Character
-    if not character then return end
+    local character = waitForCharacter()
+    if not character then 
+        warn("No se pudo encontrar el character")
+        return 
+    end
     
     local humanoid = character:FindFirstChildOfClass("Humanoid")
-    if not humanoid then return end
+    if not humanoid then 
+        warn("No se pudo encontrar el humanoid")
+        return 
+    end
+    
+    -- Esperar a que el script Animate exista
+    local animateScript = character:WaitForChild("Animate", 5)
+    if not animateScript then
+        warn("No se encontró el script Animate")
+        return
+    end
     
     -- Detener animaciones actuales
     for _, track in pairs(humanoid:GetPlayingAnimationTracks()) do
         track:Stop()
     end
     
-    -- Aplicar nuevas animaciones
-    local animateScript = character:FindFirstChild("Animate")
-    if animateScript then
-        if animationData.Idle and animateScript:FindFirstChild("idle") then
-            animateScript.idle.Animation1.AnimationId = "http://www.roblox.com/asset/?id=" .. animationData.Idle
+    -- Aplicar nuevas animaciones con verificación de errores
+    local function safeApplyAnimation(scriptPart, animationId)
+        if animationId and animationId ~= "" then
+            pcall(function()
+                if scriptPart:IsA("Animation") then
+                    scriptPart.AnimationId = "http://www.roblox.com/asset/?id=" .. animationId
+                elseif scriptPart:FindFirstChildOfClass("Animation") then
+                    scriptPart:FindFirstChildOfClass("Animation").AnimationId = "http://www.roblox.com/asset/?id=" .. animationId
+                end
+            end)
+        end
+    end
+
+    -- Aplicar animaciones
+    if animationData.Idle then
+        local idle = animateScript:FindFirstChild("idle")
+        if idle then
+            safeApplyAnimation(idle.Animation1, animationData.Idle)
             if animationData.Idle2 then
-                animateScript.idle.Animation2.AnimationId = "http://www.roblox.com/asset/?id=" .. animationData.Idle2
+                safeApplyAnimation(idle.Animation2, animationData.Idle2)
             end
         end
-        
-        if animationData.Walk and animateScript:FindFirstChild("walk") then
-            local walkAnimation = animateScript.walk:FindFirstChildOfClass("Animation")
-            if walkAnimation then
-                walkAnimation.AnimationId = "http://www.roblox.com/asset/?id=" .. animationData.Walk
-            end
-        end
-        
-        if animationData.Run and animateScript:FindFirstChild("run") then
-            local runAnimation = animateScript.run:FindFirstChildOfClass("Animation")
-            if runAnimation then
-                runAnimation.AnimationId = "http://www.roblox.com/asset/?id=" .. animationData.Run
-            end
-        end
-        
-        if animationData.Jump and animateScript:FindFirstChild("jump") then
-            local jumpAnimation = animateScript.jump:FindFirstChildOfClass("Animation")
-            if jumpAnimation then
-                jumpAnimation.AnimationId = "http://www.roblox.com/asset/?id=" .. animationData.Jump
-            end
-        end
-        
-        if animationData.Fall and animateScript:FindFirstChild("fall") then
-            local fallAnimation = animateScript.fall:FindFirstChildOfClass("Animation")
-            if fallAnimation then
-                fallAnimation.AnimationId = "http://www.roblox.com/asset/?id=" .. animationData.Fall
-            end
+    end
+    
+    if animationData.Walk then
+        safeApplyAnimation(animateScript.walk, animationData.Walk)
+    end
+    
+    if animationData.Run then
+        safeApplyAnimation(animateScript.run, animationData.Run)
+    end
+    
+    if animationData.Jump then
+        safeApplyAnimation(animateScript.jump, animationData.Jump)
+    end
+    
+    if animationData.Fall then
+        safeApplyAnimation(animateScript.fall, animationData.Fall)
+    end
+    
+    -- Aplicar velocidad
+    if getgenv().AnimationSettings.AnimationSpeed then
+        for _, track in pairs(humanoid:GetPlayingAnimationTracks()) do
+            track:AdjustSpeed(getgenv().AnimationSettings.AnimationSpeed)
         end
     end
 end
 
 -- Función para aplicar animación individual
 local function ApplySingleAnimation(animationType, animationId)
-    local character = LocalPlayer.Character
+    if not animationId or animationId == "" then return end
+    
+    local character = waitForCharacter()
     if not character then return end
     
     local animateScript = character:FindFirstChild("Animate")
@@ -154,22 +193,13 @@ local function ApplySingleAnimation(animationType, animationId)
     
     local animationFolder = animateScript:FindFirstChild(animationType:lower())
     if animationFolder then
-        local animation = animationFolder:FindFirstChildOfClass("Animation")
-        if animation then
-            animation.AnimationId = "http://www.roblox.com/asset/?id=" .. animationId
-        end
+        pcall(function()
+            local animation = animationFolder:FindFirstChildOfClass("Animation")
+            if animation then
+                animation.AnimationId = "http://www.roblox.com/asset/?id=" .. animationId
+            end
+        end)
     end
-end
-
--- Función para obtener opciones de animación por tipo
-local function GetAnimationOptions(animationType)
-    local options = {}
-    for packageName, packageData in pairs(AnimationLibrary) do
-        if packageData[animationType] then
-            options[packageName] = packageData[animationType]
-        end
-    end
-    return options
 end
 
 -- Crear la interfaz
@@ -178,8 +208,7 @@ local Window = Orion:MakeWindow({
     HidePremium = false,
     SaveConfig = false,
     ConfigFolder = "AnimationsConfig",
-    IntroEnabled = true,
-    IntroText = "Animations System"
+    IntroEnabled = false  -- Deshabilitar intro para evitar problemas
 })
 
 -- Tabs principales
@@ -207,15 +236,20 @@ local SettingsTab = Window:MakeTab({
     PremiumOnly = false
 })
 
--- Sección de animaciones predefinidas (COMPLETA)
+-- Sección de animaciones predefinidas
 MainTab:AddSection({
     Name = "Paquetes de Animaciones Completas"
 })
 
+local packageOptions = {}
+for packageName, _ in pairs(AnimationLibrary) do
+    table.insert(packageOptions, packageName)
+end
+
 local AnimationDropdown = MainTab:AddDropdown({
     Name = "Seleccionar Paquete Completo",
     Default = "",
-    Options = {"Stylish", "Zombie", "Robot", "Cartoony", "Superhero", "Ninja", "Vampire", "Bubbly"},
+    Options = packageOptions,
     Callback = function(selected)
         if selected ~= "" and AnimationLibrary[selected] then
             getgenv().AnimationSettings.SelectedAnimation = selected
@@ -236,115 +270,47 @@ MainTab:AddButton({
         local selected = getgenv().AnimationSettings.SelectedAnimation
         if selected ~= "" and AnimationLibrary[selected] then
             ApplyAnimations(AnimationLibrary[selected])
-        end
-    end
-})
-
--- SECCIONES INDIVIDUALES PARA CADA TIPO DE ANIMACIÓN
-IndividualTab:AddSection({
-    Name = "🎭 Animación IDLE (Reposo)"
-})
-
-local IdleDropdown = IndividualTab:AddDropdown({
-    Name = "Seleccionar Animación IDLE",
-    Default = "",
-    Options = {"Stylish", "Zombie", "Robot", "Cartoony", "Superhero", "Ninja", "Vampire", "Bubbly"},
-    Callback = function(selected)
-        if selected ~= "" and AnimationLibrary[selected] and AnimationLibrary[selected].Idle then
-            ApplySingleAnimation("idle", AnimationLibrary[selected].Idle)
+        else
             Orion:MakeNotification({
-                Name = "IDLE Aplicado",
-                Content = "IDLE " .. selected .. " aplicado",
+                Name = "Error",
+                Content = "Selecciona un paquete primero",
                 Image = "rbxassetid://10723427954",
-                Time = 2
+                Time = 3
             })
         end
     end
 })
 
-IndividualTab:AddSection({
-    Name = "🚶 Animación WALK (Caminar)"
-})
-
-local WalkDropdown = IndividualTab:AddDropdown({
-    Name = "Seleccionar Animación WALK",
-    Default = "",
-    Options = {"Stylish", "Zombie", "Robot", "Cartoony", "Superhero", "Ninja", "Vampire", "Bubbly"},
-    Callback = function(selected)
-        if selected ~= "" and AnimationLibrary[selected] and AnimationLibrary[selected].Walk then
-            ApplySingleAnimation("walk", AnimationLibrary[selected].Walk)
-            Orion:MakeNotification({
-                Name = "WALK Aplicado",
-                Content = "WALK " .. selected .. " aplicado",
-                Image = "rbxassetid://10723427954",
-                Time = 2
-            })
+-- Animaciones individuales
+local function createIndividualSection(tab, sectionName, animationType, displayName)
+    tab:AddSection({
+        Name = sectionName
+    })
+    
+    tab:AddDropdown({
+        Name = "Seleccionar Animación " .. displayName,
+        Default = "",
+        Options = packageOptions,
+        Callback = function(selected)
+            if selected ~= "" and AnimationLibrary[selected] and AnimationLibrary[selected][animationType] then
+                ApplySingleAnimation(animationType:lower(), AnimationLibrary[selected][animationType])
+                Orion:MakeNotification({
+                    Name = displayName .. " Aplicado",
+                    Content = displayName .. " " .. selected .. " aplicado",
+                    Image = "rbxassetid://10723427954",
+                    Time = 2
+                })
+            end
         end
-    end
-})
+    })
+end
 
-IndividualTab:AddSection({
-    Name = "🏃 Animación RUN (Correr)"
-})
-
-local RunDropdown = IndividualTab:AddDropdown({
-    Name = "Seleccionar Animación RUN",
-    Default = "",
-    Options = {"Stylish", "Zombie", "Robot", "Cartoony", "Superhero", "Ninja", "Vampire", "Bubbly"},
-    Callback = function(selected)
-        if selected ~= "" and AnimationLibrary[selected] and AnimationLibrary[selected].Run then
-            ApplySingleAnimation("run", AnimationLibrary[selected].Run)
-            Orion:MakeNotification({
-                Name = "RUN Aplicado",
-                Content = "RUN " .. selected .. " aplicado",
-                Image = "rbxassetid://10723427954",
-                Time = 2
-            })
-        end
-    end
-})
-
-IndividualTab:AddSection({
-    Name = "🦘 Animación JUMP (Saltar)"
-})
-
-local JumpDropdown = IndividualTab:AddDropdown({
-    Name = "Seleccionar Animación JUMP",
-    Default = "",
-    Options = {"Stylish", "Zombie", "Robot", "Cartoony", "Superhero", "Ninja", "Vampire", "Bubbly"},
-    Callback = function(selected)
-        if selected ~= "" and AnimationLibrary[selected] and AnimationLibrary[selected].Jump then
-            ApplySingleAnimation("jump", AnimationLibrary[selected].Jump)
-            Orion:MakeNotification({
-                Name = "JUMP Aplicado",
-                Content = "JUMP " .. selected .. " aplicado",
-                Image = "rbxassetid://10723427954",
-                Time = 2
-            })
-        end
-    end
-})
-
-IndividualTab:AddSection({
-    Name = "📉 Animación FALL (Caer)"
-})
-
-local FallDropdown = IndividualTab:AddDropdown({
-    Name = "Seleccionar Animación FALL",
-    Default = "",
-    Options = {"Stylish", "Zombie", "Robot", "Cartoony", "Superhero", "Ninja", "Vampire", "Bubbly"},
-    Callback = function(selected)
-        if selected ~= "" and AnimationLibrary[selected] and AnimationLibrary[selected].Fall then
-            ApplySingleAnimation("fall", AnimationLibrary[selected].Fall)
-            Orion:MakeNotification({
-                Name = "FALL Aplicado",
-                Content = "FALL " .. selected .. " aplicado",
-                Image = "rbxassetid://10723427954",
-                Time = 2
-            })
-        end
-    end
-})
+-- Crear secciones individuales
+createIndividualSection(IndividualTab, "🎭 Animación IDLE (Reposo)", "Idle", "IDLE")
+createIndividualSection(IndividualTab, "🚶 Animación WALK (Caminar)", "Walk", "WALK")
+createIndividualSection(IndividualTab, "🏃 Animación RUN (Correr)", "Run", "RUN")
+createIndividualSection(IndividualTab, "🦘 Animación JUMP (Saltar)", "Jump", "JUMP")
+createIndividualSection(IndividualTab, "📉 Animación FALL (Caer)", "Fall", "FALL")
 
 -- Botón para aplicar todas las animaciones individuales de un paquete
 IndividualTab:AddSection({
@@ -354,7 +320,7 @@ IndividualTab:AddSection({
 IndividualTab:AddDropdown({
     Name = "Aplicar Todas las Animaciones de:",
     Default = "",
-    Options = {"Stylish", "Zombie", "Robot", "Cartoony", "Superhero", "Ninja", "Vampire", "Bubbly"},
+    Options = packageOptions,
     Callback = function(selected)
         if selected ~= "" and AnimationLibrary[selected] then
             ApplyAnimations(AnimationLibrary[selected])
@@ -368,60 +334,29 @@ IndividualTab:AddDropdown({
     end
 })
 
--- Sección de animaciones personalizadas (se mantiene igual)
+-- Sección de animaciones personalizadas
 CustomTab:AddSection({
     Name = "Animaciones Personalizadas"
 })
 
-CustomTab:AddTextbox({
-    Name = "ID Animación Idle",
-    Default = "",
-    TextDisappear = true,
-    Callback = function(value)
-        getgenv().AnimationSettings.CustomAnimations.Idle = value
-    end
-})
+local customIds = {}
+local animationTypes = {"Idle", "Walk", "Run", "Jump", "Fall"}
 
-CustomTab:AddTextbox({
-    Name = "ID Animación Walk",
-    Default = "",
-    TextDisappear = true,
-    Callback = function(value)
-        getgenv().AnimationSettings.CustomAnimations.Walk = value
-    end
-})
-
-CustomTab:AddTextbox({
-    Name = "ID Animación Run",
-    Default = "",
-    TextDisappear = true,
-    Callback = function(value)
-        getgenv().AnimationSettings.CustomAnimations.Run = value
-    end
-})
-
-CustomTab:AddTextbox({
-    Name = "ID Animación Jump",
-    Default = "",
-    TextDisappear = true,
-    Callback = function(value)
-        getgenv().AnimationSettings.CustomAnimations.Jump = value
-    end
-})
-
-CustomTab:AddTextbox({
-    Name = "ID Animación Fall",
-    Default = "",
-    TextDisappear = true,
-    Callback = function(value)
-        getgenv().AnimationSettings.CustomAnimations.Fall = value
-    end
-})
+for _, animType in pairs(animationTypes) do
+    CustomTab:AddTextbox({
+        Name = "ID Animación " .. animType,
+        Default = "",
+        TextDisappear = true,
+        Callback = function(value)
+            customIds[animType] = value
+        end
+    })
+end
 
 CustomTab:AddButton({
     Name = "Aplicar Animaciones Personalizadas",
     Callback = function()
-        ApplyAnimations(getgenv().AnimationSettings.CustomAnimations)
+        ApplyAnimations(customIds)
         Orion:MakeNotification({
             Name = "Animaciones Aplicadas",
             Content = "Animaciones personalizadas aplicadas",
@@ -431,37 +366,47 @@ CustomTab:AddButton({
     end
 })
 
--- Sección de aplicación individual (se mantiene)
+-- Aplicación individual
 CustomTab:AddSection({
     Name = "Aplicar Animación Individual"
 })
+
+local currentAnimationID = ""
+local currentAnimationType = "idle"
 
 CustomTab:AddTextbox({
     Name = "ID de Animación",
     Default = "",
     TextDisappear = true,
     Callback = function(value)
-        getgenv().CurrentAnimationID = value
+        currentAnimationID = value
     end
 })
 
 CustomTab:AddDropdown({
     Name = "Tipo de Animación",
     Default = "idle",
-    Options = {"idle", "walk", "run", "jump", "fall", "climb", "swim"},
+    Options = {"idle", "walk", "run", "jump", "fall"},
     Callback = function(selected)
-        getgenv().CurrentAnimationType = selected
+        currentAnimationType = selected
     end
 })
 
 CustomTab:AddButton({
     Name = "Aplicar Animación Individual",
     Callback = function()
-        if getgenv().CurrentAnimationID and getgenv().CurrentAnimationType then
-            ApplySingleAnimation(getgenv().CurrentAnimationType, getgenv().CurrentAnimationID)
+        if currentAnimationID and currentAnimationID ~= "" then
+            ApplySingleAnimation(currentAnimationType, currentAnimationID)
             Orion:MakeNotification({
                 Name = "Animación Aplicada",
-                Content = "Animación " .. getgenv().CurrentAnimationType .. " aplicada",
+                Content = "Animación " .. currentAnimationType .. " aplicada",
+                Image = "rbxassetid://10723427954",
+                Time = 3
+            })
+        else
+            Orion:MakeNotification({
+                Name = "Error",
+                Content = "Ingresa un ID de animación válido",
                 Image = "rbxassetid://10723427954",
                 Time = 3
             })
@@ -478,7 +423,15 @@ MainTab:AddButton({
     Name = "Resetear a Animaciones Normales",
     Callback = function()
         getgenv().AnimationSettings.SelectedAnimation = ""
-        -- Aquí deberías restaurar las animaciones originales
+        -- Crear datos de animaciones por defecto (normales)
+        local defaultAnimations = {
+            Idle = 180435571,
+            Walk = 180426354,
+            Run = 180426354,
+            Jump = 125750702,
+            Fall = 180436148
+        }
+        ApplyAnimations(defaultAnimations)
         Orion:MakeNotification({
             Name = "Animaciones Reseteadas",
             Content = "Animaciones restauradas a las normales",
@@ -539,7 +492,7 @@ SettingsTab:AddBind({
 
 -- Función para manejar el respawn del personaje
 LocalPlayer.CharacterAdded:Connect(function(character)
-    task.wait(1) -- Esperar a que el personaje esté completamente cargado
+    task.wait(1)
     
     if getgenv().AutoApply then
         local selected = getgenv().AnimationSettings.SelectedAnimation
@@ -560,9 +513,11 @@ Orion:MakeNotification({
 
 -- Aplicar animaciones si hay una seleccionada al iniciar
 task.spawn(function()
-    task.wait(2)
+    task.wait(3) -- Esperar un poco más para asegurar que todo esté cargado
     local selected = getgenv().AnimationSettings.SelectedAnimation
     if selected ~= "" and AnimationLibrary[selected] then
         ApplyAnimations(AnimationLibrary[selected])
     end
 end)
+
+print("Animations Changer cargado correctamente!")
